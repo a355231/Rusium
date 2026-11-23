@@ -27,6 +27,15 @@
 //!   UTF-8 sequence advances the index. Ill-formed UTF-8 decodes to a sentinel
 //!   that never compares equal to anything, as in C++. Unpaired UTF-16
 //!   surrogates decode to their own code unit, as in C++.
+//! - Matching is greedy and does not backtrack past a `?`. For example
+//!   `"*a?"` does not match `"baaa"`, and `"?a?a??"` does not match
+//!   `"baaaab"`, although a backtracking matcher would accept both. C++
+//!   behaves the same way. Patterns whose only wildcard is `*` always give
+//!   the right answer.
+//! - The C++ `escape` flag is not reset when a literal search restarts after a
+//!   mismatch. So a pattern ending in an unpaired `\` can then compare that
+//!   backslash as a literal, e.g. `"ba"` does not match `"b??\"`. This is
+//!   kept for compatibility with C++.
 //! - The `constexpr` / `UNSAFE_TODO` annotations are not ported.
 //! - The libFuzzer harness in base/strings/pattern_fuzzer.cc is not ported.
 
@@ -477,7 +486,10 @@ mod tests {
             state ^= state << 17;
             state
         };
-        const ALPHABET: &[u8] = b"ab*?\\";
+        // The greedy search is exact for patterns whose only wildcard is `*`
+        // (see the crate docs); `?` can need backtracking, so it is not
+        // covered by this reference.
+        const ALPHABET: &[u8] = b"ab*\\";
         let mut positives = 0;
         for _ in 0..20000 {
             let string_len = (next_rand() % 8) as usize;
@@ -485,9 +497,14 @@ mod tests {
             let string: Vec<u8> = (0..string_len)
                 .map(|_| b"ab"[(next_rand() % 2) as usize])
                 .collect();
-            let pattern: Vec<u8> = (0..pattern_len)
+            let mut pattern: Vec<u8> = (0..pattern_len)
                 .map(|_| ALPHABET[(next_rand() % ALPHABET.len() as u64) as usize])
                 .collect();
+            // A trailing unpaired backslash has the quirk described in the
+            // crate docs; it is covered by its own test.
+            while pattern.last() == Some(&b'\\') {
+                pattern.pop();
+            }
             let expected = reference_match(&string, &pattern);
             assert_eq!(
                 match_pattern_utf8(&string, &pattern),
@@ -535,6 +552,24 @@ mod tests {
                 "string={string:?} pattern={pattern:?}"
             );
         }
+    }
+
+    #[test]
+    fn greedy_search_does_not_backtrack() {
+        // These are the same results as C++ (verified against
+        // base/strings/pattern.cc), even though a backtracking matcher would
+        // say true.
+        assert!(match_pattern_utf8(b"baaa", b"*a"));
+        assert!(!match_pattern_utf8(b"baaa", b"*a?"));
+        assert!(!match_pattern_utf8(b"baaaab", b"?a?a??"));
+    }
+
+    #[test]
+    fn trailing_backslash_restart_quirk() {
+        // Same as C++: the escape state survives the restart, so the final
+        // backslash is compared literally against the string.
+        assert!(!match_pattern_utf8(b"ba", b"b??\\"));
+        assert!(match_pattern_utf8(b"b\\", b"b\\\\"));
     }
 
     #[test]
