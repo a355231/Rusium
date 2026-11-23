@@ -292,11 +292,7 @@ mod charmap_tests {
     fn non_ascii_bitmaps() {
         for c in 0..=u8::MAX {
             assert_eq!(NON_ASCII.contains(c), c >= 0x80, "byte {c:#04x}");
-            assert_eq!(
-                NON_ASCII_AND_PERCENT.contains(c),
-                c >= 0x80 || c == b'%',
-                "byte {c:#04x}"
-            );
+            assert_eq!(NON_ASCII_AND_PERCENT.contains(c), c >= 0x80 || c == b'%', "byte {c:#04x}");
         }
     }
 }

@@ -46,17 +46,13 @@ const MIXED: &[u8] = b"\x02\n\x1d !\"#$%&'()*+,-./0123456789:;\
 // ---- Ported from escape_unittest.cc ---------------------------------------
 
 #[test]
-fn escape_text_for_form_submission() {
+fn ported_escape_text_for_form_submission() {
     let escape_cases = [("foo", "foo"), ("foo bar", "foo+bar"), ("foo++", "foo%2B%2B")];
     for (input, output) in escape_cases {
         assert_eq!(escape_query_param_value(input.as_bytes(), true), output);
     }
 
-    let escape_cases_no_plus = [
-        ("foo", "foo"),
-        ("foo bar", "foo%20bar"),
-        ("foo++", "foo%2B%2B"),
-    ];
+    let escape_cases_no_plus = [("foo", "foo"), ("foo bar", "foo%20bar"), ("foo++", "foo%2B%2B")];
     for (input, output) in escape_cases_no_plus {
         assert_eq!(escape_query_param_value(input.as_bytes(), false), output);
     }
@@ -82,7 +78,7 @@ fn escape_text_for_form_submission() {
 }
 
 #[test]
-fn escape_path() {
+fn ported_escape_path() {
     assert_eq!(
         escape_path(MIXED),
         // Escaped
@@ -94,7 +90,7 @@ fn escape_path() {
 }
 
 #[test]
-fn escape_url_encoded_data() {
+fn ported_escape_url_encoded_data() {
     assert_eq!(
         escape_url_encoded_data(MIXED, true),
         "%02%0A%1D+!%22%23%24%25%26%27()*%2B,-./0123456789:%3B\
@@ -105,13 +101,13 @@ fn escape_url_encoded_data() {
 }
 
 #[test]
-fn escape_url_encoded_data_space() {
+fn ported_escape_url_encoded_data_space() {
     assert_eq!(escape_url_encoded_data(b"a b", true), "a+b");
     assert_eq!(escape_url_encoded_data(b"a b", false), "a%20b");
 }
 
 #[test]
-fn escape_for_html() {
+fn ported_escape_for_html() {
     let tests: [(&str, &str); 3] = [
         ("hello", "hello"),
         ("<hello>", "&lt;hello&gt;"),
@@ -124,7 +120,7 @@ fn escape_for_html() {
 }
 
 #[test]
-fn unescape_for_html() {
+fn ported_unescape_for_html() {
     let tests: [(&str, &str); 11] = [
         ("", ""),
         ("&lt;hello&gt;", "<hello>"),
@@ -144,7 +140,7 @@ fn unescape_for_html() {
 }
 
 #[test]
-fn escape_external_handler_value() {
+fn ported_escape_external_handler_value() {
     assert_eq!(
         // Escaped
         "%02%0A%1D%20!%22#$%25&'()*+,-./0123456789:;\
@@ -188,16 +184,13 @@ abcdefghijklmnopqrstuvwxyz~"
 }
 
 #[test]
-fn escape_non_ascii() {
-    assert_eq!(
-        escape_non_ascii_and_percent(b"abc\n%80\x80"),
-        "abc\n%2580%80"
-    );
+fn ported_escape_non_ascii() {
+    assert_eq!(escape_non_ascii_and_percent(b"abc\n%80\x80"), "abc\n%2580%80");
     assert_eq!(escape_non_ascii(b"abc\n%80\x80"), "abc\n%80%80");
 }
 
 #[test]
-fn data_url_with_accented_characters() {
+fn ported_data_url_with_accented_characters() {
     let url = "text/html;charset=utf-8,%3Chtml%3E%3Cbody%3ETonton,%20ton%20th%C3\
 %A9%20t'a-t-il%20%C3%B4t%C3%A9%20ta%20toux%20";
 
@@ -211,7 +204,7 @@ fn data_url_with_accented_characters() {
 }
 
 #[test]
-fn unescape_url_component() {
+fn ported_unescape_url_component() {
     type Case = (&'static [u8], UnescapeRule, &'static [u8]);
     let normal = UnescapeRule::NORMAL;
     let cases: &[Case] = &[
@@ -220,97 +213,29 @@ fn unescape_url_component() {
         (b"%%%%%%", normal, b"%%%%%%"),
         (b"Don't escape anything", normal, b"Don't escape anything"),
         (b"Invalid %escape %2", normal, b"Invalid %escape %2"),
-        (
-            b"Some%20random text %25%2dOK",
-            UnescapeRule::NONE,
-            b"Some%20random text %25%2dOK",
-        ),
-        (
-            b"Some%20random text %25%2dOK",
-            normal,
-            b"Some%20random text %25-OK",
-        ),
-        (
-            b"Some%20random text %25%E1%A6",
-            normal,
-            b"Some%20random text %25\xE1\xA6",
-        ),
-        (
-            b"Some%20random text %25%E1%A6OK",
-            normal,
-            b"Some%20random text %25\xE1\xA6OK",
-        ),
-        (
-            b"Some%20random text %25%E1%A6%99OK",
-            normal,
-            b"Some%20random text %25\xE1\xA6\x99OK",
-        ),
+        (b"Some%20random text %25%2dOK", UnescapeRule::NONE, b"Some%20random text %25%2dOK"),
+        (b"Some%20random text %25%2dOK", normal, b"Some%20random text %25-OK"),
+        (b"Some%20random text %25%E1%A6", normal, b"Some%20random text %25\xE1\xA6"),
+        (b"Some%20random text %25%E1%A6OK", normal, b"Some%20random text %25\xE1\xA6OK"),
+        (b"Some%20random text %25%E1%A6%99OK", normal, b"Some%20random text %25\xE1\xA6\x99OK"),
         // BiDi control characters should not be unescaped.
-        (
-            b"Some%20random text %25%D8%9COK",
-            normal,
-            b"Some%20random text %25%D8%9COK",
-        ),
-        (
-            b"Some%20random text %25%E2%80%8EOK",
-            normal,
-            b"Some%20random text %25%E2%80%8EOK",
-        ),
-        (
-            b"Some%20random text %25%E2%80%8FOK",
-            normal,
-            b"Some%20random text %25%E2%80%8FOK",
-        ),
-        (
-            b"Some%20random text %25%E2%80%AAOK",
-            normal,
-            b"Some%20random text %25%E2%80%AAOK",
-        ),
-        (
-            b"Some%20random text %25%E2%80%ABOK",
-            normal,
-            b"Some%20random text %25%E2%80%ABOK",
-        ),
-        (
-            b"Some%20random text %25%E2%80%AEOK",
-            normal,
-            b"Some%20random text %25%E2%80%AEOK",
-        ),
-        (
-            b"Some%20random text %25%E2%81%A6OK",
-            normal,
-            b"Some%20random text %25%E2%81%A6OK",
-        ),
-        (
-            b"Some%20random text %25%E2%81%A9OK",
-            normal,
-            b"Some%20random text %25%E2%81%A9OK",
-        ),
+        (b"Some%20random text %25%D8%9COK", normal, b"Some%20random text %25%D8%9COK"),
+        (b"Some%20random text %25%E2%80%8EOK", normal, b"Some%20random text %25%E2%80%8EOK"),
+        (b"Some%20random text %25%E2%80%8FOK", normal, b"Some%20random text %25%E2%80%8FOK"),
+        (b"Some%20random text %25%E2%80%AAOK", normal, b"Some%20random text %25%E2%80%AAOK"),
+        (b"Some%20random text %25%E2%80%ABOK", normal, b"Some%20random text %25%E2%80%ABOK"),
+        (b"Some%20random text %25%E2%80%AEOK", normal, b"Some%20random text %25%E2%80%AEOK"),
+        (b"Some%20random text %25%E2%81%A6OK", normal, b"Some%20random text %25%E2%81%A6OK"),
+        (b"Some%20random text %25%E2%81%A9OK", normal, b"Some%20random text %25%E2%81%A9OK"),
         // Certain banned characters should not be unescaped.
         // U+1F50F LOCK WITH INK PEN
-        (
-            b"Some%20random text %25%F0%9F%94%8FOK",
-            normal,
-            b"Some%20random text %25%F0%9F%94%8FOK",
-        ),
+        (b"Some%20random text %25%F0%9F%94%8FOK", normal, b"Some%20random text %25%F0%9F%94%8FOK"),
         // U+1F510 CLOSED LOCK WITH KEY
-        (
-            b"Some%20random text %25%F0%9F%94%90OK",
-            normal,
-            b"Some%20random text %25%F0%9F%94%90OK",
-        ),
+        (b"Some%20random text %25%F0%9F%94%90OK", normal, b"Some%20random text %25%F0%9F%94%90OK"),
         // U+1F512 LOCK
-        (
-            b"Some%20random text %25%F0%9F%94%92OK",
-            normal,
-            b"Some%20random text %25%F0%9F%94%92OK",
-        ),
+        (b"Some%20random text %25%F0%9F%94%92OK", normal, b"Some%20random text %25%F0%9F%94%92OK"),
         // U+1F513 OPEN LOCK
-        (
-            b"Some%20random text %25%F0%9F%94%93OK",
-            normal,
-            b"Some%20random text %25%F0%9F%94%93OK",
-        ),
+        (b"Some%20random text %25%F0%9F%94%93OK", normal, b"Some%20random text %25%F0%9F%94%93OK"),
         // Spaces
         (
             b"(%C2%85)(%C2%A0)(%E1%9A%80)(%E2%80%80)",
@@ -332,28 +257,16 @@ fn unescape_url_component() {
             normal,
             b"(%E2%80%89)(%E2%80%8A)(%E2%80%A8)(%E2%80%A9)",
         ),
-        (
-            b"(%E2%80%AF)(%E2%81%9F)(%E3%80%80)",
-            normal,
-            b"(%E2%80%AF)(%E2%81%9F)(%E3%80%80)",
-        ),
+        (b"(%E2%80%AF)(%E2%81%9F)(%E3%80%80)", normal, b"(%E2%80%AF)(%E2%81%9F)(%E3%80%80)"),
         (b"(%E2%A0%80)", normal, b"(%E2%A0%80)"),
         // Default Ignorable and Formatting characters should not be unescaped.
-        (
-            b"(%E2%81%A5)(%EF%BF%B0)(%EF%BF%B8)",
-            normal,
-            b"(%E2%81%A5)(%EF%BF%B0)(%EF%BF%B8)",
-        ),
+        (b"(%E2%81%A5)(%EF%BF%B0)(%EF%BF%B8)", normal, b"(%E2%81%A5)(%EF%BF%B0)(%EF%BF%B8)"),
         (
             b"(%F3%A0%82%80)(%F3%A0%83%BF)(%F3%A0%87%B0)",
             normal,
             b"(%F3%A0%82%80)(%F3%A0%83%BF)(%F3%A0%87%B0)",
         ),
-        (
-            b"(%F3%A0%BF%BF)(%C2%AD)(%CD%8F)",
-            normal,
-            b"(%F3%A0%BF%BF)(%C2%AD)(%CD%8F)",
-        ),
+        (b"(%F3%A0%BF%BF)(%C2%AD)(%CD%8F)", normal, b"(%F3%A0%BF%BF)(%C2%AD)(%CD%8F)"),
         (
             b"(%D8%80%20)(%D8%85)(%DB%9D)(%DC%8F)(%E0%A3%A2)",
             normal,
@@ -389,23 +302,11 @@ fn unescape_url_component() {
             normal,
             b"(%EF%BF%BB)(%F0%91%82%BD)(%F0%91%83%8D)",
         ),
-        (
-            b"(%F0%93%90%B0)(%F0%93%90%B8)",
-            normal,
-            b"(%F0%93%90%B0)(%F0%93%90%B8)",
-        ),
+        (b"(%F0%93%90%B0)(%F0%93%90%B8)", normal, b"(%F0%93%90%B0)(%F0%93%90%B8)"),
         // General Punctuation - Deprecated (U+206A--206F)
-        (
-            b"(%E2%81%AA)(%E2%81%AD)(%E2%81%AF)",
-            normal,
-            b"(%E2%81%AA)(%E2%81%AD)(%E2%81%AF)",
-        ),
+        (b"(%E2%81%AA)(%E2%81%AD)(%E2%81%AF)", normal, b"(%E2%81%AA)(%E2%81%AD)(%E2%81%AF)"),
         // Variation selectors (U+FE00--FE0F)
-        (
-            b"(%EF%B8%80)(%EF%B8%8C)(%EF%B8%8D)",
-            normal,
-            b"(%EF%B8%80)(%EF%B8%8C)(%EF%B8%8D)",
-        ),
+        (b"(%EF%B8%80)(%EF%B8%8C)(%EF%B8%8D)", normal, b"(%EF%B8%80)(%EF%B8%8C)(%EF%B8%8D)"),
         // Shorthand format controls (U+1BCA0--1BCA3)
         (
             b"(%F0%9B%B2%A0)(%F0%9B%B2%A1)(%F0%9B%B2%A3)",
@@ -434,11 +335,7 @@ fn unescape_url_component() {
         (b"%D8%9C%D8%9C", normal, b"%D8%9C%D8%9C"),
         // Non-spoofing characters surrounded by spoofing characters should be
         // unescaped.
-        (
-            b"%D8%9C%C2%A1%D8%9C%C2%A1",
-            normal,
-            b"%D8%9C\xC2\xA1%D8%9C\xC2\xA1",
-        ),
+        (b"%D8%9C%C2%A1%D8%9C%C2%A1", normal, b"%D8%9C\xC2\xA1%D8%9C\xC2\xA1"),
         // Invalid UTF-8 characters surrounded by spoofing characters should be
         // unescaped.
         (b"%D8%9C%85%D8%9C%85", normal, b"%D8%9C\x85%D8%9C\x85"),
@@ -449,11 +346,7 @@ fn unescape_url_component() {
             normal,
             b"%D8%9C\x9C\x9C\x9C\x9C\x9C\x9C\x9C\x9C\x9C",
         ),
-        (
-            b"Some%20random text %25%2dOK",
-            UnescapeRule::SPACES,
-            b"Some random text %25-OK",
-        ),
+        (b"Some%20random text %25%2dOK", UnescapeRule::SPACES, b"Some random text %25-OK"),
         (
             b"Some%20random text %25%2dOK",
             UnescapeRule::PATH_SEPARATORS,
@@ -519,7 +412,7 @@ fn unescape_url_component() {
 }
 
 #[test]
-fn unescape_and_decode_utf8_url_component_with_adjustments() {
+fn ported_unescape_and_decode_utf8_url_component_with_adjustments() {
     // (input, url_unescaped, query_unescaped, decoded).
     type Case = (&'static [u8], &'static [u8], &'static [u8], &'static str);
     let cases: &[Case] = &[
@@ -562,25 +455,20 @@ fn unescape_and_decode_utf8_url_component_with_adjustments() {
     ];
 
     for (input, url_unescaped, query_unescaped, decoded) in cases {
-        assert_eq!(
-            unescape_url_component(input, UnescapeRule::NORMAL),
-            *url_unescaped
-        );
+        assert_eq!(unescape_url_component(input, UnescapeRule::NORMAL), *url_unescaped);
         assert_eq!(
             unescape_url_component(input, UnescapeRule::REPLACE_PLUS_WITH_SPACE),
             *query_unescaped
         );
         // The adjustments are checked by the next test.
-        let (got, _) = unescape_and_decode_utf8_url_component_with_adjustments(
-            input,
-            UnescapeRule::NORMAL,
-        );
+        let (got, _) =
+            unescape_and_decode_utf8_url_component_with_adjustments(input, UnescapeRule::NORMAL);
         assert_eq!(got, *decoded);
     }
 }
 
 #[test]
-fn adjust_offset() {
+fn ported_adjust_offset() {
     // (input, input_offset, output_offset). `None` is C++ `npos`.
     type Case = (&'static [u8], Option<usize>, Option<usize>);
     let cases: &[Case] = &[
@@ -623,10 +511,8 @@ fn adjust_offset() {
     ];
 
     for (input, input_offset, output_offset) in cases {
-        let (_, adjustments) = unescape_and_decode_utf8_url_component_with_adjustments(
-            input,
-            UnescapeRule::NORMAL,
-        );
+        let (_, adjustments) =
+            unescape_and_decode_utf8_url_component_with_adjustments(input, UnescapeRule::NORMAL);
         let got = offset_adjuster_adjust(&adjustments, *input_offset);
         assert_eq!(
             got,
@@ -643,7 +529,7 @@ fn offset_adjuster_adjust(adjustments: &[Adjustment], offset: Option<usize>) -> 
 }
 
 #[test]
-fn unescape_binary_url_component() {
+fn ported_unescape_binary_url_component() {
     type Case = (&'static [u8], UnescapeRule, &'static [u8]);
     let cases: &[Case] = &[
         // Check that ASCII characters with special handling in
@@ -651,22 +537,14 @@ fn unescape_binary_url_component() {
         (b"%09%20%25foo%2F", UnescapeRule::NORMAL, b"\x09 %foo/"),
         // UTF-8 Characters banned by UnescapeURLComponent() should also be
         // unescaped.
-        (
-            b"Some random text %D8%9COK",
-            UnescapeRule::NORMAL,
-            b"Some random text \xD8\x9COK",
-        ),
+        (b"Some random text %D8%9COK", UnescapeRule::NORMAL, b"Some random text \xD8\x9COK"),
         (
             b"Some random text %F0%9F%94%8FOK",
             UnescapeRule::NORMAL,
             b"Some random text \xF0\x9F\x94\x8FOK",
         ),
         // As should invalid UTF-8 characters.
-        (
-            b"%A0%A0%E9%E9%A0%A0%A0%A0",
-            UnescapeRule::NORMAL,
-            b"\xA0\xA0\xE9\xE9\xA0\xA0\xA0\xA0",
-        ),
+        (b"%A0%A0%E9%E9%A0%A0%A0%A0", UnescapeRule::NORMAL, b"\xA0\xA0\xE9\xE9\xA0\xA0\xA0\xA0"),
         // And valid UTF-8 characters that are not banned by
         // UnescapeURLComponent() should be unescaped, too!
         (b"%C2%A1%C2%A1", UnescapeRule::NORMAL, b"\xC2\xA1\xC2\xA1"),
@@ -690,20 +568,18 @@ fn unescape_binary_url_component() {
     expected.push(0);
     expected.push(0);
     expected.extend_from_slice(b"9Test");
-    assert_eq!(
-        unescape_binary_url_component(&input, UnescapeRule::NORMAL),
-        expected
-    );
+    assert_eq!(unescape_binary_url_component(&input, UnescapeRule::NORMAL), expected);
 }
 
 #[test]
-fn unescape_binary_url_component_safe() {
-    // (input, expected output or None if it must fail with
-    // fail_on_path_separators = false, has_path_separators).
-    let cases: &[(&[u8], Option<&[u8]>, bool)] = &[
+fn ported_unescape_binary_url_component_safe() {
+    // (input, expected output, has_path_separators). A `None` output means the
+    // C++ expects failure when `fail_on_path_separators` is false.
+    type BinaryCase = (&'static [u8], Option<&'static [u8]>, bool);
+    let cases: &[BinaryCase] = &[
         // Spaces, percents, and invalid UTF-8 characters are all successfully
         // unescaped.
-        (b"%20%25foo%81", Some(b" %foo\x81"), false),
+        (b"%20%25foo%81", Some(&b" %foo\x81"[..]), false),
         // Characters disallowed unconditionally.
         (b"foo%00", None, false),
         (b"foo%01", None, false),
@@ -711,11 +587,11 @@ fn unescape_binary_url_component_safe() {
         (b"foo%0D", None, false),
         (b"foo%1F", None, false),
         // Path separators.
-        (b"foo%2F", Some(b"foo/"), true),
-        (b"foo%5C", Some(b"foo\\"), true),
+        (b"foo%2F", Some(&b"foo/"[..]), true),
+        (b"foo%5C", Some(&b"foo\\"[..]), true),
         // Characters that are considered invalid to escape are ignored if
         // passed in unescaped.
-        (b"foo\x01\r/\\", Some(b"foo\x01\r/\\"), false),
+        (b"foo\x01\r/\\", Some(&b"foo\x01\r/\\"[..]), false),
     ];
 
     for (input, expected_output, has_path_separators) in cases {
@@ -743,13 +619,13 @@ fn unescape_binary_url_component_safe() {
 }
 
 #[test]
-fn contains_encoded_bytes() {
-    assert!(!contains_encoded_bytes(b"abc/def", &[b'/', b'\\']));
-    assert!(!contains_encoded_bytes(b"abc%2Fdef", &[b'%']));
-    assert!(contains_encoded_bytes(b"abc%252Fdef", &[b'%']));
-    assert!(contains_encoded_bytes(b"abc%2Fdef", &[b'/', b'\\']));
-    assert!(contains_encoded_bytes(b"abc%5Cdef", &[b'/', b'\\']));
-    assert!(contains_encoded_bytes(b"abc%2fdef", &[b'/', b'\\']));
+fn ported_contains_encoded_bytes() {
+    assert!(!contains_encoded_bytes(b"abc/def", b"/\\"));
+    assert!(!contains_encoded_bytes(b"abc%2Fdef", b"%"));
+    assert!(contains_encoded_bytes(b"abc%252Fdef", b"%"));
+    assert!(contains_encoded_bytes(b"abc%2Fdef", b"/\\"));
+    assert!(contains_encoded_bytes(b"abc%5Cdef", b"/\\"));
+    assert!(contains_encoded_bytes(b"abc%2fdef", b"/\\"));
 
     // Should be looking for byte values, not UTF-8 character values.
     assert!(contains_encoded_bytes(b"caf%C3%A9", &[0xc3]));
@@ -775,26 +651,25 @@ fn exhaustive_single_escape_rules() {
         for c in 0..=u8::MAX {
             let escaped = format!("%{c:02X}");
             let got = unescape_url_component(escaped.as_bytes(), rules);
-            let expect_unescaped = if c >= 0x80 {
+            let expect_unescaped = if rules == UnescapeRule::NONE {
+                // NONE returns the input unchanged.
+                false
+            } else if c >= 0x80 {
                 // A lone high byte is never a complete character. It is
-                // unescaped to a raw byte under every rule, as in C++.
-                rules != UnescapeRule::NONE
+                // unescaped to a raw byte under every other rule, as in C++.
+                true
             } else {
                 let ascii_default = c.is_ascii_alphanumeric() || b"\"-<>_~".contains(&c);
                 let spaces = c == b' ' && rules.intersects(UnescapeRule::SPACES);
-                let seps = (c == b'/' || c == b'\\')
-                    && rules.intersects(UnescapeRule::PATH_SEPARATORS);
+                let seps =
+                    (c == b'/' || c == b'\\') && rules.intersects(UnescapeRule::PATH_SEPARATORS);
                 let special = c > b' '
                     && c != b'/'
                     && c != b'\\'
                     && rules.intersects(UnescapeRule::URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS);
                 ascii_default || spaces || seps || special
             };
-            let expected = if expect_unescaped {
-                vec![c]
-            } else {
-                escaped.as_bytes().to_vec()
-            };
+            let expected = if expect_unescaped { vec![c] } else { escaped.as_bytes().to_vec() };
             assert_eq!(got, expected, "rules {:#x} byte {c:#04x}", rules.bits());
         }
     }
@@ -900,10 +775,7 @@ fn escape_then_binary_unescape_round_trips() {
     for _ in 0..2000 {
         let input = rng.bytes(64);
         let all = escape_all_except_unreserved(&input);
-        assert_eq!(
-            unescape_binary_url_component(all.as_bytes(), UnescapeRule::NORMAL),
-            input
-        );
+        assert_eq!(unescape_binary_url_component(all.as_bytes(), UnescapeRule::NORMAL), input);
         let query = escape_query_param_value(&input, true);
         assert_eq!(
             unescape_binary_url_component(
@@ -921,8 +793,23 @@ fn escape_then_binary_unescape_round_trips() {
 fn unescape_url_component_properties() {
     let mut rng = XorShift64::new(7);
     let alphabet: &[&[u8]] = &[
-        b"%", b"2", b"0", b"a", b"F", b"+", b"%41", b"%E4%BD%A0", b"%C2%A1", b"%ED",
-        b"%80", b"%F0%9F%98%80", b"x", b" ", b"%2F", b"%00", b"%D8%9C",
+        b"%",
+        b"2",
+        b"0",
+        b"a",
+        b"F",
+        b"+",
+        b"%41",
+        b"%E4%BD%A0",
+        b"%C2%A1",
+        b"%ED",
+        b"%80",
+        b"%F0%9F%98%80",
+        b"x",
+        b" ",
+        b"%2F",
+        b"%00",
+        b"%D8%9C",
     ];
     for _ in 0..2000 {
         let mut input = Vec::new();
@@ -956,41 +843,13 @@ fn adjustments_match_token_model() {
         atomic: bool,
     }
     const TOKENS: &[Token] = &[
-        Token {
-            escaped: b"a",
-            decoded: "a",
-            atomic: false,
-        },
-        Token {
-            escaped: b"%41",
-            decoded: "A",
-            atomic: true,
-        },
-        Token {
-            escaped: b"%E4%BD%A0",
-            decoded: "\u{4f60}",
-            atomic: true,
-        },
-        Token {
-            escaped: b"%F0%9F%98%80",
-            decoded: "\u{1F600}",
-            atomic: true,
-        },
-        Token {
-            escaped: b"%20",
-            decoded: "%20",
-            atomic: false,
-        },
-        Token {
-            escaped: b"+",
-            decoded: "+",
-            atomic: false,
-        },
-        Token {
-            escaped: b"%2B",
-            decoded: "%2B",
-            atomic: false,
-        },
+        Token { escaped: b"a", decoded: "a", atomic: false },
+        Token { escaped: b"%41", decoded: "A", atomic: true },
+        Token { escaped: b"%E4%BD%A0", decoded: "\u{4f60}", atomic: true },
+        Token { escaped: b"%F0%9F%98%80", decoded: "\u{1F600}", atomic: true },
+        Token { escaped: b"%20", decoded: "%20", atomic: false },
+        Token { escaped: b"+", decoded: "+", atomic: false },
+        Token { escaped: b"%2B", decoded: "%2B", atomic: false },
     ];
 
     let mut rng = XorShift64::new(0xDEAD_BEEF);
@@ -1010,10 +869,8 @@ fn adjustments_match_token_model() {
             utf16_pos += t.decoded.encode_utf16().count();
         }
 
-        let (got_text, adjustments) = unescape_and_decode_utf8_url_component_with_adjustments(
-            &escaped,
-            UnescapeRule::NORMAL,
-        );
+        let (got_text, adjustments) =
+            unescape_and_decode_utf8_url_component_with_adjustments(&escaped, UnescapeRule::NORMAL);
         assert_eq!(got_text, decoded, "escaped {:?}", String::from_utf8_lossy(&escaped));
 
         for offset in 0..=escaped.len() {
@@ -1021,10 +878,7 @@ fn adjustments_match_token_model() {
             let expected = if offset == escaped.len() {
                 Some(utf16_pos)
             } else {
-                let idx = spans
-                    .iter()
-                    .rposition(|&(start, _)| start <= offset)
-                    .unwrap_or(0);
+                let idx = spans.iter().rposition(|&(start, _)| start <= offset).unwrap_or(0);
                 let (start, utf16_start) = spans[idx];
                 let token = picked[idx];
                 if offset == start {
@@ -1067,9 +921,8 @@ fn html_escape_round_trips() {
     let alphabet = b"ab&<>\"'; lt;amp;#39;";
     for _ in 0..2000 {
         let len = rng.below(20);
-        let text: String = (0..len)
-            .map(|_| char::from(alphabet[rng.below(alphabet.len())]))
-            .collect();
+        let text: String =
+            (0..len).map(|_| char::from(alphabet[rng.below(alphabet.len())])).collect();
         let escaped = escape_for_html(text.as_bytes());
         let escaped = String::from_utf8(escaped).expect("ASCII output");
         assert_eq!(unescape_for_html(&escaped), text, "text {text:?}");

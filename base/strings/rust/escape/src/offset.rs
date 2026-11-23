@@ -20,11 +20,7 @@ pub struct Adjustment {
 
 impl Adjustment {
     pub const fn new(original_offset: usize, original_length: usize, output_length: usize) -> Self {
-        Adjustment {
-            original_offset,
-            original_length,
-            output_length,
-        }
+        Adjustment { original_offset, original_length, output_length }
     }
 }
 
@@ -52,9 +48,7 @@ pub fn adjust_offset(
     }
     // The C++ computes this in unsigned arithmetic, which may wrap. The
     // wrapping operations here give the same bits.
-    let adjusted = offset
-        .wrapping_add(output_lengths)
-        .wrapping_sub(original_lengths);
+    let adjusted = offset.wrapping_add(output_lengths).wrapping_sub(original_lengths);
     match limit {
         Some(limit) if adjusted > limit => None,
         _ => Some(adjusted),
@@ -100,11 +94,8 @@ pub fn merge_sequential_adjustments(
                 first[fi].original_offset + first[fi].output_length
                     <= adjusted[ai].original_offset + shift
             );
-            shift = shift.wrapping_add(
-                first[fi]
-                    .original_length
-                    .wrapping_sub(first[fi].output_length),
-            );
+            shift =
+                shift.wrapping_add(first[fi].original_length.wrapping_sub(first[fi].output_length));
             builder.push(first[fi]);
             fi += 1;
         } else {

@@ -43,9 +43,9 @@
 //! - `OffsetAdjuster::AdjustOffsets`, `UnadjustOffset(s)`,
 //!   `UTF8ToUTF16AndAdjustOffsets` and `UTF16ToUTF8AndAdjustOffsets`. Escaping
 //!   needs only `AdjustOffset` and `MergeSequentialAdjustments`.
-//! - The `base::` string helpers used by the C++, such as `ASCIIToUTF16`,
-//!   `StringPrintf` and `Charmap` generation. Each is either replaced by the
-//!   standard library or re-implemented inside the crate.
+//! - The `base::` helpers the C++ uses, such as `ASCIIToUTF16`, `StringPrintf`
+//!   and `IsHexDigit`. Each is replaced by the standard library or
+//!   re-implemented inside the crate.
 //!
 //! Testing: `src/tests.rs` ports every `TEST` in `escape_unittest.cc`. It also
 //! adds randomized differential tests (a small xorshift PRNG) against

@@ -57,19 +57,13 @@ impl std::ops::BitOr for UnescapeRule {
 // clang-format off
 const URL_UNESCAPE: [u8; 128] = [
     // Control characters, 0x00..=0x1F.
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // ' ' ! " # $ % & ' ( ) * + , - . /
-    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-    // 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0,
-    // @ A B C D E F G H I J K L M N O
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // P Q R S T U V W X Y Z [ \ ] ^ _
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-    // ` a b c d e f g h i j k l m n o
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // p q r s t u v w x y z { | } ~ DEL
+    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, // 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, // @ A B C D E F G H I J K L M N O
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // P Q R S T U V W X Y Z [ \ ] ^ _
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, // ` a b c d e f g h i j k l m n o
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // p q r s t u v w x y z { | } ~ DEL
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
 ];
 // clang-format on
@@ -248,7 +242,8 @@ pub fn unescape_and_decode_utf8_url_component_with_adjustments(
 pub fn unescape_binary_url_component(escaped_text: &[u8], rules: UnescapeRule) -> Vec<u8> {
     debug_assert!(rules != UnescapeRule::NONE);
     debug_assert!(
-        rules.bits() & !(UnescapeRule::NORMAL.bits() | UnescapeRule::REPLACE_PLUS_WITH_SPACE.bits())
+        rules.bits()
+            & !(UnescapeRule::NORMAL.bits() | UnescapeRule::REPLACE_PLUS_WITH_SPACE.bits())
             == 0
     );
     let replace_plus = rules.intersects(UnescapeRule::REPLACE_PLUS_WITH_SPACE);
@@ -278,16 +273,11 @@ pub fn unescape_binary_url_component_safe(
     escaped_text: &[u8],
     fail_on_path_separators: bool,
 ) -> Option<Vec<u8>> {
-    let illegal = |b: u8| {
-        b <= 0x1F || (fail_on_path_separators && (b == b'/' || b == b'\\'))
-    };
+    let illegal = |b: u8| b <= 0x1F || (fail_on_path_separators && (b == b'/' || b == b'\\'));
     if any_encoded_byte(escaped_text, illegal) {
         return None;
     }
-    Some(unescape_binary_url_component(
-        escaped_text,
-        UnescapeRule::NORMAL,
-    ))
+    Some(unescape_binary_url_component(escaped_text, UnescapeRule::NORMAL))
 }
 
 /// Returns true if `escaped_text` contains a `%XX` escape for any byte in
@@ -317,13 +307,8 @@ fn any_encoded_byte(escaped_text: &[u8], pred: impl Fn(u8) -> bool) -> bool {
 /// Each replacement is made once, left to right. For `&amp;lt;` the result is
 /// `&lt;`, not `<`.
 pub fn unescape_for_html(input: &str) -> String {
-    const ENTITIES: [(&str, char); 5] = [
-        ("&lt;", '<'),
-        ("&gt;", '>'),
-        ("&amp;", '&'),
-        ("&quot;", '"'),
-        ("&#39;", '\''),
-    ];
+    const ENTITIES: [(&str, char); 5] =
+        [("&lt;", '<'), ("&gt;", '>'), ("&amp;", '&'), ("&quot;", '"'), ("&#39;", '\'')];
     if !input.contains('&') {
         return input.to_string();
     }

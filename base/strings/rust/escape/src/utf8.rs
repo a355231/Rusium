@@ -62,11 +62,7 @@ pub(crate) fn decode_utf8_char(src: &[u8], index: usize) -> Result<(char, usize)
         let Some(&b) = src.get(index + k) else {
             return Err(k);
         };
-        let (lo, hi) = if k == 1 {
-            (first_lo, first_hi)
-        } else {
-            (0x80, 0xBF)
-        };
+        let (lo, hi) = if k == 1 { (first_lo, first_hi) } else { (0x80, 0xBF) };
         if !(lo..=hi).contains(&b) {
             return Err(k);
         }
