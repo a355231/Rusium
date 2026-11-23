@@ -208,6 +208,5 @@ pub use delta::{
 pub use delta_from_string::time_delta_from_string;
 pub use ticks::{ThreadTicks, TimeTicks};
 pub use time::{Exploded, Time, MICROSECONDS_FROM_WINDOWS_TO_UNIX_EPOCH};
-
 #[cfg(test)]
 mod tests;

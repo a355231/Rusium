@@ -194,8 +194,7 @@ impl HttpRequestHeaders {
 
     /// The value of the first header named `key`, borrowed.
     pub fn get_header_view(&self, key: impl AsRef<[u8]>) -> Option<&[u8]> {
-        self.find_header(key.as_ref())
-            .map(|i| self.headers[i].value.as_slice())
+        self.find_header(key.as_ref()).map(|i| self.headers[i].value.as_slice())
     }
 
     /// A copy of the value of the first header named `key`.
@@ -219,14 +218,8 @@ impl HttpRequestHeaders {
     /// invalid header could carry browser-internal data.
     pub fn set_header(&mut self, key: impl AsRef<[u8]>, value: impl AsRef<[u8]>) {
         let (key, value) = (key.as_ref(), value.as_ref());
-        assert!(
-            is_valid_header_name(key),
-            "invalid header name: {key:?}"
-        );
-        assert!(
-            is_valid_header_value(value),
-            "invalid header value for {key:?}"
-        );
+        assert!(is_valid_header_name(key), "invalid header name: {key:?}");
+        assert!(is_valid_header_value(value), "invalid header value for {key:?}");
         self.set_header_internal(key, value);
     }
 
@@ -252,10 +245,7 @@ impl HttpRequestHeaders {
         assert!(is_valid_header_name(key), "invalid header name: {key:?}");
         assert!(is_valid_header_value(value), "invalid header value for {key:?}");
         if self.find_header(key).is_none() {
-            self.headers.push(HeaderKeyValuePair {
-                key: key.to_vec(),
-                value: value.to_vec(),
-            });
+            self.headers.push(HeaderKeyValuePair { key: key.to_vec(), value: value.to_vec() });
         }
     }
 
@@ -276,10 +266,7 @@ impl HttpRequestHeaders {
         header_line: impl AsRef<[u8]>,
     ) -> Result<(), HeaderLineError> {
         let line = header_line.as_ref();
-        let colon = line
-            .iter()
-            .position(|&c| c == b':')
-            .ok_or(HeaderLineError::MissingColon)?;
+        let colon = line.iter().position(|&c| c == b':').ok_or(HeaderLineError::MissingColon)?;
         if colon == 0 {
             return Err(HeaderLineError::MissingKey);
         }
@@ -346,10 +333,7 @@ impl HttpRequestHeaders {
 
     /// An iterator over the headers in insertion order.
     pub fn iter(&self) -> HttpRequestHeadersIterator<'_> {
-        HttpRequestHeadersIterator {
-            rest: self.headers.iter(),
-            current: None,
-        }
+        HttpRequestHeadersIterator { rest: self.headers.iter(), current: None }
     }
 
     /// Sets `Accept-Encoding` if it is not already set and there is no
@@ -406,18 +390,15 @@ impl HttpRequestHeaders {
     }
 
     fn find_header(&self, key: &[u8]) -> Option<usize> {
-        self.headers
-            .iter()
-            .position(|h| h.key.eq_ignore_ascii_case(key))
+        self.headers.iter().position(|h| h.key.eq_ignore_ascii_case(key))
     }
 
     fn set_header_internal(&mut self, key: &[u8], value: &[u8]) {
         match self.find_header(key) {
             Some(i) => self.headers[i].value = value.to_vec(),
-            None => self.headers.push(HeaderKeyValuePair {
-                key: key.to_vec(),
-                value: value.to_vec(),
-            }),
+            None => {
+                self.headers.push(HeaderKeyValuePair { key: key.to_vec(), value: value.to_vec() })
+            }
         }
     }
 }
@@ -768,14 +749,8 @@ mod tests {
     fn add_header_from_string_errors_leave_headers_unchanged() {
         let mut headers = HttpRequestHeaders::new();
         headers.set_header("Keep", "1");
-        assert_eq!(
-            headers.add_header_from_string("NoColon"),
-            Err(HeaderLineError::MissingColon)
-        );
-        assert_eq!(
-            headers.add_header_from_string(": value"),
-            Err(HeaderLineError::MissingKey)
-        );
+        assert_eq!(headers.add_header_from_string("NoColon"), Err(HeaderLineError::MissingColon));
+        assert_eq!(headers.add_header_from_string(": value"), Err(HeaderLineError::MissingKey));
         assert_eq!(
             headers.add_header_from_string("Bad Key: value"),
             Err(HeaderLineError::InvalidKey)
@@ -798,9 +773,7 @@ mod tests {
     #[test]
     fn add_headers_from_string_splits_on_crlf_and_skips_bad_lines() {
         let mut headers = HttpRequestHeaders::new();
-        let result = headers.add_headers_from_string(
-            "A: 1\r\n  \r\nBad Line\r\nB: 2 \r\n\r\nC: 3",
-        );
+        let result = headers.add_headers_from_string("A: 1\r\n  \r\nBad Line\r\nB: 2 \r\n\r\nC: 3");
         // The bad line is skipped, the rest are added, and the error is returned.
         assert_eq!(result, Err(HeaderLineError::MissingColon));
         assert_eq!(headers.to_bytes(), b"A: 1\r\nB: 2\r\nC: 3\r\n\r\n");

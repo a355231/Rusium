@@ -67,8 +67,9 @@
 mod recency;
 
 use std::borrow::Borrow;
+use std::collections::hash_map::RandomState;
 use std::collections::{BTreeMap, HashMap};
-use std::hash::{BuildHasher, Hash, RandomState};
+use std::hash::{BuildHasher, Hash};
 
 use recency::Recency;
 
@@ -76,7 +77,9 @@ use recency::Recency;
 /// `HashMap`. Users do not implement this trait.
 pub trait SlotIndex<K>: Default {
     /// Each key with its slot, in the index's order.
-    fn entries(&self) -> impl Iterator<Item = (&K, usize)>;
+    fn entries<'a>(&'a self) -> impl Iterator<Item = (&'a K, usize)>
+    where
+        K: 'a;
 
     /// Records `key` at `slot`, replacing any earlier entry for `key`.
     fn insert_slot(&mut self, key: K, slot: usize);
@@ -95,7 +98,10 @@ pub trait SlotLookup<K, Q: ?Sized>: SlotIndex<K> {
 }
 
 impl<K: Ord> SlotIndex<K> for BTreeMap<K, usize> {
-    fn entries(&self) -> impl Iterator<Item = (&K, usize)> {
+    fn entries<'a>(&'a self) -> impl Iterator<Item = (&'a K, usize)>
+    where
+        K: 'a,
+    {
         self.iter().map(|(key, &slot)| (key, slot))
     }
 
@@ -123,7 +129,10 @@ where
 }
 
 impl<K: Eq + Hash, S: BuildHasher + Default> SlotIndex<K> for HashMap<K, usize, S> {
-    fn entries(&self) -> impl Iterator<Item = (&K, usize)> {
+    fn entries<'a>(&'a self) -> impl Iterator<Item = (&'a K, usize)>
+    where
+        K: 'a,
+    {
         self.iter().map(|(key, &slot)| (key, slot))
     }
 

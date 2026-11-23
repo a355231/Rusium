@@ -48,8 +48,8 @@ impl TrimPositions {
 
 /// Returns the `(start, end, trimmed)` bounds of `input` after trimming
 /// `trim_chars` from the requested ends. When the whole input is trimmed, the
-/// range is empty and `trimmed` is the requested `positions`. That matches
-/// C++ `TrimStringT`. Empty input reports `None`.
+/// range is empty and `trimmed` is the requested `positions`, as in C++
+/// `TrimStringT`. Empty input reports `TrimPositions::None`.
 fn trim_bounds<T: CodeUnit>(
     input: &[T],
     trim_chars: &[T],
@@ -218,6 +218,3 @@ pub fn collapse_whitespace_ascii_str(text: &str, trim_sequences_with_line_breaks
 pub fn contains_only_chars<T: CodeUnit>(input: &[T], characters: &[T]) -> bool {
     input.iter().all(|c| characters.contains(c))
 }
-
-/// Re-exported ASCII whitespace list, for callers that want the raw set.
-pub const ASCII_WHITESPACE_SET: &[u8] = WHITESPACE_ASCII;

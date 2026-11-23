@@ -57,8 +57,10 @@ fn saturated_clamp_range(min: i32, max: i32) -> (i32, i32) {
     if max < min {
         return (min, 0);
     }
-    let effective_span = (max as i64 - min as i64).min(i32::MAX as i64) as i32;
-    let span_loss = max as i64 - (min as i64 + effective_span as i64);
+    // `base::ClampSub`: the exact span may not fit in an i32. `min + span`
+    // cannot overflow, because `span` is at most `max - min`.
+    let effective_span = max.saturating_sub(min);
+    let span_loss = max.saturating_sub(min + effective_span);
 
     // If the span fits in an i32, the simple computation is exact.
     if span_loss == 0 {
@@ -76,7 +78,7 @@ fn saturated_clamp_range(min: i32, max: i32) -> (i32, i32) {
         (min, effective_span)
     } else {
         // Both are big, so keep the center.
-        ((min as i64 + span_loss / 2) as i32, effective_span)
+        (min + span_loss / 2, effective_span)
     }
 }
 

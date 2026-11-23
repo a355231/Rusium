@@ -42,25 +42,18 @@ impl<'a> HttpAuthChallengeTokenizer<'a> {
     pub fn new(challenge: &'a [u8]) -> Self {
         // The first LWS-delimited token is the auth-scheme. This is more
         // permissive than RFC 2617, which requires 1*SP.
-        let (lower_case_scheme, params) =
-            match challenge.iter().position(|c| !HTTP_LWS.contains(c)) {
-                None => (Vec::new(), &challenge[..0]),
-                Some(start) => {
-                    let end = challenge[start..]
-                        .iter()
-                        .position(|c| HTTP_LWS.contains(c))
-                        .map_or(challenge.len(), |p| start + p);
-                    (
-                        challenge[start..end].to_ascii_lowercase(),
-                        trim_lws(&challenge[end..]),
-                    )
-                }
-            };
-        Self {
-            challenge,
-            params,
-            lower_case_scheme,
-        }
+        let (lower_case_scheme, params) = match challenge.iter().position(|c| !HTTP_LWS.contains(c))
+        {
+            None => (Vec::new(), &challenge[..0]),
+            Some(start) => {
+                let end = challenge[start..]
+                    .iter()
+                    .position(|c| HTTP_LWS.contains(c))
+                    .map_or(challenge.len(), |p| start + p);
+                (challenge[start..end].to_ascii_lowercase(), trim_lws(&challenge[end..]))
+            }
+        };
+        Self { challenge, params, lower_case_scheme }
     }
 
     /// The original challenge text.
@@ -90,7 +83,7 @@ impl<'a> HttpAuthChallengeTokenizer<'a> {
         // Our base64 decoder requires a length that is a multiple of 4.
         let mut encoded_length = self.params.len();
         while encoded_length > 0
-            && encoded_length % 4 != 0
+            && !encoded_length.is_multiple_of(4)
             && self.params[encoded_length - 1] == b'='
         {
             encoded_length -= 1;
@@ -182,9 +175,8 @@ mod tests {
     // last value.
     #[test]
     fn mismatched_quotes_multiple() {
-        let challenge = HttpAuthChallengeTokenizer::new(
-            b"Digest qop=auth-int, algorithm=md5, realm=\"foo",
-        );
+        let challenge =
+            HttpAuthChallengeTokenizer::new(b"Digest qop=auth-int, algorithm=md5, realm=\"foo");
         let mut parameters = challenge.param_pairs();
 
         assert!(parameters.valid());

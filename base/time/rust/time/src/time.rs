@@ -155,7 +155,7 @@ impl Time {
         if tv_usec == MICROSECONDS_PER_SECOND - 1 && tv_sec == i64::MAX {
             return Self::max();
         }
-        Self::unix_epoch() + seconds(tv_sec) + microseconds_i64(tv_usec)
+        Self::unix_epoch() + seconds(tv_sec) + TimeDelta::from_internal_value(tv_usec)
     }
 
     /// Returns `(tv_sec, tv_usec)` for a POSIX `timeval`. The null time gives
@@ -401,5 +401,5 @@ fn parse_time(time_string: &str, default_to_gmt: bool, offset_at_utc: &dyn Fn(i6
         default_to_gmt,
         offset_at_utc,
     )?;
-    Some(Time::unix_epoch() + microseconds_i64(result_time))
+    Some(Time::unix_epoch() + TimeDelta::from_internal_value(result_time))
 }

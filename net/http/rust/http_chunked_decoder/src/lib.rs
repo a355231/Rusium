@@ -111,9 +111,8 @@ impl HttpChunkedDecoder {
         while read < len {
             if self.chunk_remaining > 0 {
                 let available = len - read;
-                let num = usize::try_from(self.chunk_remaining)
-                    .unwrap_or(usize::MAX)
-                    .min(available);
+                let num =
+                    usize::try_from(self.chunk_remaining).unwrap_or(usize::MAX).min(available);
                 self.chunk_remaining -= num as u64;
                 if write != read {
                     buf.copy_within(read..read + num, write);
@@ -308,9 +307,7 @@ mod tests {
     #[test]
     fn incremental() {
         run_test(
-            &[
-                b"5", b"\r", b"\n", b"hello", b"\r", b"\n", b"0", b"\r", b"\n", b"\r", b"\n",
-            ],
+            &[b"5", b"\r", b"\n", b"hello", b"\r", b"\n", b"0", b"\r", b"\n", b"\r", b"\n"],
             "hello",
             true,
             0,
@@ -320,22 +317,12 @@ mod tests {
     // Same as above, but group carriage returns with previous input.
     #[test]
     fn incremental2() {
-        run_test(
-            &[b"5\r", b"\n", b"hello\r", b"\n", b"0\r", b"\n\r", b"\n"],
-            "hello",
-            true,
-            0,
-        );
+        run_test(&[b"5\r", b"\n", b"hello\r", b"\n", b"0\r", b"\n\r", b"\n"], "hello", true, 0);
     }
 
     #[test]
     fn lf_instead_of_crlf() {
-        run_test(
-            &[b"5\nhello\n", b"1\n \n", b"5\nworld\n", b"0\n\n"],
-            "hello world",
-            true,
-            0,
-        );
+        run_test(&[b"5\nhello\n", b"1\n \n", b"5\nworld\n", b"0\n\n"], "hello world", true, 0);
     }
 
     #[test]
@@ -444,15 +431,10 @@ mod tests {
 
             // Repeatedly feed data with no chunk framing. The decoder must not
             // move it, so it keeps its pattern.
-            let mut data: Vec<u8> = (0..WRITTEN_BYTES_PER_ITERATION)
-                .map(|i| i as u8)
-                .collect();
+            let mut data: Vec<u8> = (0..WRITTEN_BYTES_PER_ITERATION).map(|i| i as u8).collect();
             let mut total_written: u64 = 0;
             while total_written < chunk_length {
-                assert_eq!(
-                    decoder.filter_buf(&mut data),
-                    Ok(WRITTEN_BYTES_PER_ITERATION)
-                );
+                assert_eq!(decoder.filter_buf(&mut data), Ok(WRITTEN_BYTES_PER_ITERATION));
                 assert!(!decoder.reached_eof());
                 total_written += WRITTEN_BYTES_PER_ITERATION as u64;
             }
@@ -499,7 +481,16 @@ mod tests {
     fn incremental_extra_data() {
         run_test(
             &[
-                b"5", b"\r", b"\n", b"hello", b"\r", b"\n", b"0", b"\r", b"\n", b"\r",
+                b"5",
+                b"\r",
+                b"\n",
+                b"hello",
+                b"\r",
+                b"\n",
+                b"0",
+                b"\r",
+                b"\n",
+                b"\r",
                 b"\nextra bytes",
             ],
             "hello",
@@ -639,9 +630,7 @@ mod tests {
         let mut rng = XorShift64(0x9e37_79b9_7f4a_7c15);
         for _ in 0..3_000 {
             let len = rng.below(60);
-            let input: Vec<u8> = (0..len)
-                .map(|_| alphabet[rng.below(alphabet.len())])
-                .collect();
+            let input: Vec<u8> = (0..len).map(|_| alphabet[rng.below(alphabet.len())]).collect();
 
             let mut decoder = HttpChunkedDecoder::new();
             let mut one = input.clone();

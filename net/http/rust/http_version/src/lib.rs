@@ -117,10 +117,7 @@ mod tests {
         // In C++ this is the case where `major << 16` overflows `int`.
         assert!(HttpVersion::new(0x8000, 0) > HttpVersion::new(0x7fff, u16::MAX));
         assert_eq!(packed(HttpVersion::new(0x8000, 0)), 0x8000_0000);
-        assert_eq!(
-            packed(HttpVersion::new(u16::MAX, u16::MAX)),
-            u32::MAX
-        );
+        assert_eq!(packed(HttpVersion::new(u16::MAX, u16::MAX)), u32::MAX);
     }
 
     #[test]
@@ -137,7 +134,7 @@ mod tests {
         let mut rng = XorShift64(0x9e37_79b9_7f4a_7c15);
         for _ in 0..20_000 {
             // Small values often share a major, so both fields get exercised.
-            let mut pick = |r: u64| -> u16 {
+            let pick = |r: u64| -> u16 {
                 if r & 1 == 0 {
                     (r >> 1) as u16 % 4
                 } else {
