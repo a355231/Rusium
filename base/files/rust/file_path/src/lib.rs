@@ -280,9 +280,8 @@ fn final_extension_separator_position(s: &str) -> Option<usize> {
     s.rfind('.')
 }
 
-const COMMON_DOUBLE_EXTENSION_SUFFIXES: &[&str] = &[
-    "bz", "bz2", "gz", "lz", "lzma", "lzo", "xz", "z", "zst",
-];
+const COMMON_DOUBLE_EXTENSION_SUFFIXES: &[&str] =
+    &["bz", "bz2", "gz", "lz", "lzma", "lzo", "xz", "z", "zst"];
 const COMMON_DOUBLE_EXTENSIONS: &[&str] = &["user.js"];
 
 /// Position of the dot that starts the extension, or `None`. A common double
@@ -309,18 +308,12 @@ fn extension_separator_position(f: PathFlavor, s: &str) -> Option<usize> {
     };
 
     let tail = &s[penultimate + 1..];
-    if COMMON_DOUBLE_EXTENSIONS
-        .iter()
-        .any(|e| tail.eq_ignore_ascii_case(e))
-    {
+    if COMMON_DOUBLE_EXTENSIONS.iter().any(|e| tail.eq_ignore_ascii_case(e)) {
         return Some(penultimate);
     }
 
     let extension = &s[last_dot + 1..];
-    if COMMON_DOUBLE_EXTENSION_SUFFIXES
-        .iter()
-        .any(|e| extension.eq_ignore_ascii_case(e))
-    {
+    if COMMON_DOUBLE_EXTENSION_SUFFIXES.iter().any(|e| extension.eq_ignore_ascii_case(e)) {
         // Count the units between the two dots, as the C++ code does.
         let diff = f.unit_len(&s[penultimate..last_dot]);
         if diff > 1 && diff <= 5 {
@@ -384,7 +377,7 @@ fn are_drive_letter_components_equal(left: &str, right: &str) -> bool {
         && l[1] == b':'
         && r[1] == b':'
         && l[0].is_ascii_alphabetic()
-        && l[0].to_ascii_lowercase() == r[0].to_ascii_lowercase()
+        && l[0].eq_ignore_ascii_case(&r[0])
 }
 
 /// A path in the native format of a [`PathFlavor`].
@@ -409,10 +402,7 @@ impl FilePath {
             Some(nul) => &path[..nul],
             None => path,
         };
-        FilePath {
-            flavor,
-            path: path.to_owned(),
-        }
+        FilePath { flavor, path: path.to_owned() }
     }
 
     /// Returns the flavor of this path.
@@ -436,10 +426,7 @@ impl FilePath {
     }
 
     fn same_flavor(&self, path: String) -> FilePath {
-        FilePath {
-            flavor: self.flavor,
-            path,
-        }
+        FilePath { flavor: self.flavor, path }
     }
 
     /// Returns true if `c` is a separator for this path's flavor.
@@ -539,9 +526,7 @@ impl FilePath {
                 || (index == 0
                     && f == PathFlavor::Windows
                     && are_drive_letter_components_equal(pc, cc))
-                || (index == 1
-                    && is_network_path(f, &self.path)
-                    && pc.eq_ignore_ascii_case(cc));
+                || (index == 1 && is_network_path(f, &self.path) && pc.eq_ignore_ascii_case(cc));
             if !equal {
                 return false;
             }
@@ -719,13 +704,8 @@ impl FilePath {
         if is_empty_or_special(base_name_of(self.flavor, &self.path)) {
             return self.same_flavor(String::new());
         }
-        let joined = format!(
-            "{}{}{}",
-            self.remove_extension().value(),
-            suffix,
-            self.extension()
-        );
-        self.from_str_same_flavor(&joined)
+        let joined = format!("{}{}{}", self.remove_extension().value(), suffix, self.extension());
+        self.build_same_flavor(&joined)
     }
 
     /// [`FilePath::insert_before_extension`] with an ASCII-only suffix.
@@ -752,15 +732,14 @@ impl FilePath {
         if extension.is_empty() || extension == "." {
             return self.clone();
         }
-        let needs_separator = !extension.starts_with('.')
-            && !self.path.is_empty()
-            && !self.path.ends_with('.');
+        let needs_separator =
+            !extension.starts_with('.') && !self.path.is_empty() && !self.path.ends_with('.');
         let mut out = self.path.clone();
         if needs_separator {
             out.push('.');
         }
         out.push_str(extension);
-        self.from_str_same_flavor(&out)
+        self.build_same_flavor(&out)
     }
 
     /// [`FilePath::add_extension`] with an ASCII-only extension.
@@ -793,7 +772,7 @@ impl FilePath {
             out.push('.');
         }
         out.push_str(extension);
-        self.from_str_same_flavor(&out)
+        self.build_same_flavor(&out)
     }
 
     /// Returns true if `extension()` equals `extension`, ignoring case. The
@@ -838,11 +817,8 @@ impl FilePath {
             let last = new_path.as_bytes()[new_path.len() - 1];
             if !self.flavor.is_sep_byte(last) {
                 // Don't add a separator right after a drive letter.
-                let after_drive = if self.flavor.has_drive_letter(&new_path) {
-                    Some(2)
-                } else {
-                    None
-                };
+                let after_drive =
+                    if self.flavor.has_drive_letter(&new_path) { Some(2) } else { None };
                 if after_drive != Some(new_path.len()) {
                     new_path.push(char::from(self.flavor.canonical_sep_byte()));
                 }
@@ -892,10 +868,7 @@ impl FilePath {
     /// Returns true if the last character is a separator. An empty path is
     /// false.
     pub fn ends_with_separator(&self) -> bool {
-        self.path
-            .as_bytes()
-            .last()
-            .is_some_and(|&b| self.flavor.is_sep_byte(b))
+        self.path.as_bytes().last().is_some_and(|&b| self.flavor.is_sep_byte(b))
     }
 
     /// Returns a copy that ends with a separator. An empty path stays empty.
@@ -995,19 +968,13 @@ impl FilePath {
         let out: String = self
             .path
             .chars()
-            .map(|c| {
-                if self.flavor.is_separator(c) {
-                    normalized_separator
-                } else {
-                    c
-                }
-            })
+            .map(|c| if self.flavor.is_separator(c) { normalized_separator } else { c })
             .collect();
         self.same_flavor(out)
     }
 
     /// Builds a path with this flavor from `s`, cutting at the first NUL.
-    fn from_str_same_flavor(&self, s: &str) -> FilePath {
+    fn build_same_flavor(&self, s: &str) -> FilePath {
         FilePath::new(self.flavor, s)
     }
 }
@@ -1020,10 +987,7 @@ impl fmt::Display for FilePath {
 
 impl fmt::Debug for FilePath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("FilePath")
-            .field("flavor", &self.flavor)
-            .field("path", &self.path)
-            .finish()
+        f.debug_struct("FilePath").field("flavor", &self.flavor).field("path", &self.path).finish()
     }
 }
 
