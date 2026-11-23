@@ -36,8 +36,9 @@
 //!   C++ rejects more than 100 digits by returning an empty string, and the
 //!   port does the same.
 //! - The C++ `NumberToStringWithFixedPrecision` formats into a 32-byte stack
-//!   buffer, which overflows for long outputs (undefined behavior). The port
-//!   returns the full string and never truncates.
+//!   buffer. Outputs longer than that (for example 1e20 with 20 digits) assert
+//!   in debug builds and write past the buffer in release builds (undefined
+//!   behavior). The port returns the full string and never truncates.
 //! - Floating-point parsing reproduces double_conversion's grammar exactly:
 //!   the same leading-whitespace set, the same rules for signs, `.`, exponents
 //!   and junk, the same 772-significant-digit truncation with a sticky digit,
@@ -138,14 +139,7 @@ impl CodeUnit for u16 {
         is_ascii_space(c)
             || matches!(
                 c,
-                0x85 | 0xA0
-                    | 0x1680
-                    | 0x2000..=0x200A
-                    | 0x2028
-                    | 0x2029
-                    | 0x202F
-                    | 0x205F
-                    | 0x3000
+                0x85 | 0xA0 | 0x1680 | 0x2000..=0x200A | 0x2028 | 0x2029 | 0x202F | 0x205F | 0x3000
             )
     }
 }
@@ -162,13 +156,6 @@ fn is_dec<C: CodeUnit>(c: C) -> bool {
 /// `true`). `Err` is a failed conversion (C++ `false`), and the payload is the
 /// value C++ would have written to `*output`.
 pub type Parsed<T> = Result<T, T>;
-
-fn split<T>(parsed: Parsed<T>) -> (T, bool) {
-    match parsed {
-        Ok(v) => (v, true),
-        Err(v) => (v, false),
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Integer parsing (StringToIntImpl / HexStringToIntImpl)
@@ -257,11 +244,7 @@ fn parse_digits<T: Integer, C: CodeUnit>(
     // Accumulate the magnitude. The C++ bounds check before `value *= base`
     // is equivalent to `magnitude * base + digit > bound`, because
     // `bound` is `MAX` or `|MIN|`, and every digit is smaller than `base`.
-    let bound = if negative {
-        T::min_magnitude()
-    } else {
-        T::max_magnitude()
-    };
+    let bound = if negative { T::min_magnitude() } else { T::max_magnitude() };
     let mut magnitude: u128 = 0;
     for &unit in &input[begin..] {
         let Some(digit) = digit_value(unit.value(), base) else {
@@ -707,10 +690,7 @@ fn fixed_precision_string(value: f64, digits: usize) -> Option<String> {
     let exact = format!("{:.1074}", value.abs());
     let (int_part, frac_part) = exact.split_once('.').expect("precision > 0 prints '.'");
     let round_up = frac_part.as_bytes()[digits] >= b'5';
-    let mut all: Vec<u8> = int_part
-        .bytes()
-        .chain(frac_part.bytes().take(digits))
-        .collect();
+    let mut all: Vec<u8> = int_part.bytes().chain(frac_part.bytes().take(digits)).collect();
     if round_up {
         increment_decimal(&mut all);
     }
@@ -735,9 +715,7 @@ pub fn number_to_string_with_fixed_precision(value: f64, digits: usize) -> Strin
 
 /// `NumberToString16WithFixedPrecision`.
 pub fn number_to_string16_with_fixed_precision(value: f64, digits: usize) -> Vec<u16> {
-    number_to_string_with_fixed_precision(value, digits)
-        .encode_utf16()
-        .collect()
+    number_to_string_with_fixed_precision(value, digits).encode_utf16().collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -802,7 +780,7 @@ fn hex_value(c: u8) -> Option<u8> {
 /// index and byte. Decoding stops at the first invalid pair. Returns whether
 /// the whole input decoded.
 fn decode_pairs(input: &[u8], mut emit: impl FnMut(usize, u8)) -> bool {
-    if input.is_empty() || input.len() % 2 != 0 {
+    if input.is_empty() || !input.len().is_multiple_of(2) {
         return false;
     }
     for (index, pair) in input.chunks_exact(2).enumerate() {
@@ -837,16 +815,12 @@ pub fn hex_string_to_string(input: &[u8]) -> Result<Vec<u8>, HexDecodeError> {
 /// written and the rest of `output` is left unchanged.
 pub fn hex_string_to_span(input: &[u8], output: &mut [u8]) -> Result<(), HexDecodeError> {
     if input.len() / 2 != output.len() {
-        return Err(HexDecodeError {
-            partial: Vec::new(),
-        });
+        return Err(HexDecodeError { partial: Vec::new() });
     }
     if decode_pairs(input, |index, byte| output[index] = byte) {
         Ok(())
     } else {
-        Err(HexDecodeError {
-            partial: Vec::new(),
-        })
+        Err(HexDecodeError { partial: Vec::new() })
     }
 }
 

@@ -13,9 +13,10 @@
 //! Both take slices rather than `&str`, because the C++ behavior for invalid
 //! UTF-8 is part of the contract and `&str` cannot represent it.
 //!
-//! The matching algorithm is the same naive backtracking-free search as the
-//! C++ code (leftmost literal placement, restarted after each mismatch), so
-//! results match C++ for every input, including invalid UTF-8.
+//! The matching algorithm is the same greedy search as the C++ code (leftmost
+//! literal placement, restarted after each mismatch). Results were checked
+//! against the C++ implementation on random inputs, including invalid UTF-8
+//! and lone surrogates.
 //!
 //! Differences from the C++ version:
 //! - The C++ `int` count of `?` characters in a run is saturated instead of
@@ -193,14 +194,14 @@ fn next_utf8(s: &[u8], index: &mut usize) -> i32 {
     // Indexed by `lead & 0xf` (for leads E0..EF): bit `t1 >> 5` says whether
     // the first trail byte `t1` is valid after that lead byte.
     const LEAD3_T1_BITS: [u8; 16] = [
-        0x20, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x10,
-        0x30, 0x30,
+        0x20, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x10, 0x30,
+        0x30,
     ];
     // Indexed by `t1 >> 4`: bit `lead - 0xf0` says whether the lead byte
     // F0..F4 accepts the first trail byte `t1`.
     const LEAD4_T1_BITS: [u8; 16] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x0f, 0x0f, 0x0f, 0x00, 0x00,
-        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x0f, 0x0f, 0x0f, 0x00, 0x00, 0x00,
+        0x00,
     ];
 
     let len = s.len();
@@ -353,32 +354,17 @@ mod tests {
         // Invalid sequences should be handled as a single invalid character.
         assert!(match_pattern_utf8(b"invalid: \xef\xbf\xbe", b"invalid: ?"));
         // If the pattern has invalid characters, it shouldn't match anything.
-        assert!(!match_pattern_utf8(
-            b"\xf4\x90\x80\x80",
-            b"\xf4\x90\x80\x80"
-        ));
+        assert!(!match_pattern_utf8(b"\xf4\x90\x80\x80", b"\xf4\x90\x80\x80"));
 
         // Test UTF16 character matching.
         assert!(match_pattern_utf16(&u16s("www.google.com"), &u16s("*.com")));
-        assert!(match_pattern_utf16(
-            &u16s("Hello*1234"),
-            &u16s("He??o\\*1*")
-        ));
+        assert!(match_pattern_utf16(&u16s("Hello*1234"), &u16s("He??o\\*1*")));
 
         // Some test cases that might cause naive implementations to exhibit
         // exponential run time or fail.
-        assert!(match_pattern_utf8(
-            b"Hello",
-            b"He********************************o"
-        ));
-        assert!(match_pattern_utf8(
-            b"123456789012345678",
-            b"?????????????????*"
-        ));
-        assert!(match_pattern_utf8(
-            b"aaaaaaaaaaab",
-            b"a*a*a*a*a*a*a*a*a*a*a*b"
-        ));
+        assert!(match_pattern_utf8(b"Hello", b"He********************************o"));
+        assert!(match_pattern_utf8(b"123456789012345678", b"?????????????????*"));
+        assert!(match_pattern_utf8(b"aaaaaaaaaaab", b"a*a*a*a*a*a*a*a*a*a*a*b"));
     }
 
     // Expected values were produced by running the C++ MatchPattern from
@@ -494,9 +480,8 @@ mod tests {
         for _ in 0..20000 {
             let string_len = (next_rand() % 8) as usize;
             let pattern_len = (next_rand() % 7) as usize;
-            let string: Vec<u8> = (0..string_len)
-                .map(|_| b"ab"[(next_rand() % 2) as usize])
-                .collect();
+            let string: Vec<u8> =
+                (0..string_len).map(|_| b"ab"[(next_rand() % 2) as usize]).collect();
             let mut pattern: Vec<u8> = (0..pattern_len)
                 .map(|_| ALPHABET[(next_rand() % ALPHABET.len() as u64) as usize])
                 .collect();

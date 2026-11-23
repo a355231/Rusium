@@ -60,7 +60,7 @@ pub fn levenshtein_distance<T: PartialEq>(a: &[T], b: &[T], max_distance: Option
     for (j, slot) in dp[k..].iter_mut().enumerate() {
         *slot = j;
     }
-    for i in 0..a.len() {
+    for (i, a_i) in a.iter().enumerate() {
         for d in 0..=2 * k {
             if i + d < k || i + d >= b.len() + k {
                 // j = i + d - k is outside b. For j = -1 (the empty prefix of
@@ -69,7 +69,7 @@ pub fn levenshtein_distance<T: PartialEq>(a: &[T], b: &[T], max_distance: Option
                 continue;
             }
             let j = i + d - k;
-            if a[i] != b[j] {
+            if a_i != &b[j] {
                 // Substitution keeps d.
                 let replace = dp[d];
                 // Deletion moves to d + 1.
@@ -113,23 +113,11 @@ mod tests {
         assert_eq!(4, levenshtein_distance(b"abcd", b"", None));
 
         // `std::u16string_view` version.
-        assert_eq!(
-            4,
-            levenshtein_distance(&u16s("xxx"), &u16s("xxxxxxx"), None)
-        );
-        assert_eq!(
-            4,
-            levenshtein_distance(&u16s("xxxxxxx"), &u16s("xxx"), None)
-        );
+        assert_eq!(4, levenshtein_distance(&u16s("xxx"), &u16s("xxxxxxx"), None));
+        assert_eq!(4, levenshtein_distance(&u16s("xxxxxxx"), &u16s("xxx"), None));
 
-        assert_eq!(
-            7,
-            levenshtein_distance(&u16s("yyy"), &u16s("xxxxxxx"), None)
-        );
-        assert_eq!(
-            7,
-            levenshtein_distance(&u16s("xxxxxxx"), &u16s("yyy"), None)
-        );
+        assert_eq!(7, levenshtein_distance(&u16s("yyy"), &u16s("xxxxxxx"), None));
+        assert_eq!(7, levenshtein_distance(&u16s("xxxxxxx"), &u16s("yyy"), None));
     }
 
     // Ports of WithMaxDistance in base/strings/levenshtein_distance_unittest.cc.
@@ -184,12 +172,10 @@ mod tests {
             state
         };
         for _ in 0..5000 {
-            let a: Vec<u8> = (0..next_rand() % 12)
-                .map(|_| b"abc"[(next_rand() % 3) as usize])
-                .collect();
-            let b: Vec<u8> = (0..next_rand() % 12)
-                .map(|_| b"abc"[(next_rand() % 3) as usize])
-                .collect();
+            let a: Vec<u8> =
+                (0..next_rand() % 12).map(|_| b"abc"[(next_rand() % 3) as usize]).collect();
+            let b: Vec<u8> =
+                (0..next_rand() % 12).map(|_| b"abc"[(next_rand() % 3) as usize]).collect();
             let exact = naive_distance(&a, &b);
             assert_eq!(levenshtein_distance(&a, &b, None), exact);
             for k in 0..14usize {
@@ -208,10 +194,7 @@ mod tests {
         let a = b"the quick brown fox";
         let b = b"a quick brown dog!";
         for k in [None, Some(0), Some(3), Some(20)] {
-            assert_eq!(
-                levenshtein_distance(a, b, k),
-                levenshtein_distance(b, a, k)
-            );
+            assert_eq!(levenshtein_distance(a, b, k), levenshtein_distance(b, a, k));
         }
     }
 
