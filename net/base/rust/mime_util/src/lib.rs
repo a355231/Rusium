@@ -173,18 +173,9 @@ const SECONDARY_MAPPINGS: &[MimeInfo] = &[
     ("application/vnd.mozilla.xul+xml", "xul"),
     ("application/vnd.ms-excel", "xls"),
     ("application/vnd.ms-powerpoint", "ppt"),
-    (
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "pptx",
-    ),
-    (
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "xlsx",
-    ),
-    (
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "docx",
-    ),
+    ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"),
+    ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+    ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
     ("application/x-gzip", "gz,tgz"),
     ("application/x-mpegurl", "m3u8"),
     // ChromeOS adds ("application/x-pkcs12", "p12,pfx") here. That entry is
@@ -267,10 +258,7 @@ fn find_first_of(s: &[u8], set: &[u8], from: usize) -> usize {
     if from >= s.len() {
         return NPOS;
     }
-    s[from..]
-        .iter()
-        .position(|c| set.contains(c))
-        .map_or(NPOS, |p| p + from)
+    s[from..].iter().position(|c| set.contains(c)).map_or(NPOS, |p| p + from)
 }
 
 /// Like `std::string::find_first_not_of(set, from)`. Returns `NPOS` if none.
@@ -278,10 +266,7 @@ fn find_first_not_of(s: &[u8], set: &[u8], from: usize) -> usize {
     if from >= s.len() {
         return NPOS;
     }
-    s[from..]
-        .iter()
-        .position(|c| !set.contains(c))
-        .map_or(NPOS, |p| p + from)
+    s[from..].iter().position(|c| !set.contains(c)).map_or(NPOS, |p| p + from)
 }
 
 /// Returns true for ASCII whitespace as in `base::IsAsciiWhitespace`, which
@@ -302,10 +287,7 @@ fn is_token(s: &str) -> bool {
 /// Extensions are compared ASCII case-insensitively.
 fn find_mime_type(mappings: &[MimeInfo], ext: &str) -> Option<&'static str> {
     mappings.iter().find_map(|&(mime_type, extensions)| {
-        extensions
-            .split(',')
-            .any(|e| e.eq_ignore_ascii_case(ext))
-            .then_some(mime_type)
+        extensions.split(',').any(|e| e.eq_ignore_ascii_case(ext)).then_some(mime_type)
     })
 }
 
@@ -413,9 +395,8 @@ fn matches_mime_type_parameters(pattern: &str, mime_type: &str) -> bool {
         return false;
     };
 
-    let pattern_params = to_lower_map(
-        split_string_into_key_value_pairs(&pattern[semicolon + 1..], '=', ';').pairs,
-    );
+    let pattern_params =
+        to_lower_map(split_string_into_key_value_pairs(&pattern[semicolon + 1..], '=', ';').pairs);
     let test_params = to_lower_map(
         split_string_into_key_value_pairs(&mime_type[test_semicolon + 1..], '=', ';').pairs,
     );
@@ -423,9 +404,7 @@ fn matches_mime_type_parameters(pattern: &str, mime_type: &str) -> bool {
     if pattern_params.len() > test_params.len() {
         return false;
     }
-    pattern_params
-        .iter()
-        .all(|(key, value)| test_params.get(key) == Some(value))
+    pattern_params.iter().all(|(key, value)| test_params.get(key) == Some(value))
 }
 
 /// Returns true if `mime_type_pattern` matches `mime_type`. Supports absolute
@@ -620,8 +599,7 @@ pub fn extract_mime_type_from_media_type(
     if accept_comma_separated {
         end = end.min(type_string.find(',').unwrap_or(type_string.len()));
     }
-    parse_mime_type_without_parameter(&type_string[..end])
-        .map(|(top, sub)| format!("{top}/{sub}"))
+    parse_mime_type_without_parameter(&type_string[..end]).map(|(top, sub)| format!("{top}/{sub}"))
 }
 
 /// Returns true if `type_string` is an IANA top-level media type, or an
@@ -633,10 +611,7 @@ pub fn is_valid_top_level_mime_type(type_string: &str) -> bool {
     if LEGAL_TOP_LEVEL_TYPES.contains(&lower.as_str()) {
         return true;
     }
-    if matches!(
-        lower.as_str(),
-        "x-scheme-handler" | "x-content" | "x-directory" | "x-special"
-    ) {
+    if matches!(lower.as_str(), "x-scheme-handler" | "x-content" | "x-directory" | "x-special") {
         return false;
     }
     lower.len() > 2 && lower.starts_with("x-")
@@ -704,9 +679,7 @@ impl Rng {
 
     /// Seeds from `std`'s randomly keyed hasher and the clock.
     fn from_entropy() -> Self {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_nanos() as u64);
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos() as u64);
         let mut hasher = RandomState::new().build_hasher();
         hasher.write_u64(nanos);
         Self::from_seed(hasher.finish())
@@ -773,9 +746,8 @@ pub fn add_multipart_value_for_upload(
     mime_boundary: &str,
     content_type: &str,
 ) -> String {
-    let mut out = format!(
-        "--{mime_boundary}\r\nContent-Disposition: form-data; name=\"{value_name}\"\r\n"
-    );
+    let mut out =
+        format!("--{mime_boundary}\r\nContent-Disposition: form-data; name=\"{value_name}\"\r\n");
     push_content_type_and_value(&mut out, value, content_type);
     out
 }
