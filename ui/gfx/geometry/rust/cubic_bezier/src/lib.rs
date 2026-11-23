@@ -385,7 +385,7 @@ impl CubicBezier {
 mod tests {
     use super::*;
 
-    /// Port of the C++ `XorShift` style PRNG used for the randomized tests.
+    /// Small xorshift PRNG for the randomized tests (not part of the C++ suite).
     struct XorShift64(u64);
 
     impl XorShift64 {

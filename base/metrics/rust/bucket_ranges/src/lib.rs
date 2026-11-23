@@ -47,11 +47,7 @@ fn crc32_zlib(crc: u32, data: &[u8]) -> u32 {
     for &byte in data {
         c ^= u32::from(byte);
         for _ in 0..8 {
-            c = if c & 1 != 0 {
-                (c >> 1) ^ 0xedb8_8320
-            } else {
-                c >> 1
-            };
+            c = if c & 1 != 0 { (c >> 1) ^ 0xedb8_8320 } else { c >> 1 };
         }
     }
     !c
@@ -193,8 +189,7 @@ impl BucketRanges {
 
     /// Stores the persistent-memory reference for these ranges.
     pub fn set_persistent_reference(&self, reference: u32) {
-        self.persistent_reference
-            .store(reference, Ordering::Release);
+        self.persistent_reference.store(reference, Ordering::Release);
     }
 
     /// Returns the persistent-memory reference, or 0 if unset.

@@ -64,8 +64,7 @@ pub const WHITESPACE_ASCII: &str = "\t\u{0B}\u{0C} \n\r";
 pub const WHITESPACE_UTF16: &[u16] = &[
     0x09, 0x0B, 0x0C, 0x20, 0x0A, 0x0D, // ASCII set.
     0x0085, 0x00A0, 0x1680, //
-    0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008,
-    0x2009, 0x200A, //
+    0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, //
     0x2028, 0x2029, 0x202F, 0x205F, 0x3000,
 ];
 
@@ -95,8 +94,11 @@ pub struct KeyValueSplit<T> {
     /// included, as `("", "")` when the key/value delimiter is missing, or as
     /// `(key, "")` when there is no value.
     pub pairs: Vec<(T, T)>,
-    /// `true` only if every pair has a non-empty key and a non-empty value.
-    /// Corresponds to the C++ `bool` return value.
+    /// `true` only if every pair has a key/value delimiter and a non-empty
+    /// value. An empty key is allowed. The C++ header comment says keys must be
+    /// non-empty too, but the code and `EmptyKeyWithKeyValueDelimiter` return
+    /// `true` for `:value`, so this port follows the code. Corresponds to the
+    /// C++ `bool` return value.
     pub complete: bool,
 }
 
@@ -123,14 +125,9 @@ fn trim_utf16(piece: &[u16], whitespace: WhitespaceHandling) -> &[u16] {
     if whitespace == WhitespaceHandling::KeepWhitespace {
         return piece;
     }
-    let start = piece
-        .iter()
-        .position(|&u| !is_utf16_whitespace_unit(u))
-        .unwrap_or(piece.len());
-    let end = piece
-        .iter()
-        .rposition(|&u| !is_utf16_whitespace_unit(u))
-        .map_or(start, |last| last + 1);
+    let start = piece.iter().position(|&u| !is_utf16_whitespace_unit(u)).unwrap_or(piece.len());
+    let end =
+        piece.iter().rposition(|&u| !is_utf16_whitespace_unit(u)).map_or(start, |last| last + 1);
     &piece[start..end]
 }
 
@@ -316,12 +313,7 @@ pub fn split_string_once(input: &str, separator: char) -> Option<(&str, &str)> {
 /// Splits at the first character in `separators`. Returns `None` if none is
 /// present. Equivalent of `base::SplitStringOnce(std::string_view, string_view)`.
 pub fn split_string_once_any<'a>(input: &'a str, separators: &str) -> Option<(&'a str, &'a str)> {
-    split_at_separator(
-        input,
-        input
-            .char_indices()
-            .find(|&(_, c)| separators.contains(c)),
-    )
+    split_at_separator(input, input.char_indices().find(|&(_, c)| separators.contains(c)))
 }
 
 /// Splits at the last `separator`. Returns `None` if it is not present.
@@ -333,13 +325,7 @@ pub fn rsplit_string_once(input: &str, separator: char) -> Option<(&str, &str)> 
 /// Splits at the last character in `separators`. Returns `None` if none is
 /// present. Equivalent of `base::RSplitStringOnce(std::string_view, string_view)`.
 pub fn rsplit_string_once_any<'a>(input: &'a str, separators: &str) -> Option<(&'a str, &'a str)> {
-    split_at_separator(
-        input,
-        input
-            .char_indices()
-            .rev()
-            .find(|&(_, c)| separators.contains(c)),
-    )
+    split_at_separator(input, input.char_indices().rev().find(|&(_, c)| separators.contains(c)))
 }
 
 // ---------------------------------------------------------------------------
@@ -440,11 +426,7 @@ pub fn split_string_into_key_value_pairs_using_substr(
     key_value_delimiter: char,
     key_value_pair_delimiter: &str,
 ) -> KeyValueSplit<String> {
-    to_owned_key_values(split_key_value_views(
-        input,
-        key_value_delimiter,
-        key_value_pair_delimiter,
-    ))
+    to_owned_key_values(split_key_value_views(input, key_value_delimiter, key_value_pair_delimiter))
 }
 
 /// Borrowing version of

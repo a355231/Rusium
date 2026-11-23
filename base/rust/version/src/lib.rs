@@ -108,9 +108,7 @@ impl Version {
     /// Returns an invalid `Version` if the input does not parse. Use
     /// `is_valid()` to check the outcome.
     pub fn new(version_str: &str) -> Version {
-        Version {
-            components: parse_version_numbers(version_str).unwrap_or_default(),
-        }
+        Version { components: parse_version_numbers(version_str).unwrap_or_default() }
     }
 
     /// Builds a `Version` from its components, such as `[1, 2, 3, 4]`.
@@ -171,15 +169,9 @@ impl Version {
         // `self` is greater on the compared digits. It is equal if its digits
         // match `parsed` wherever both have a component.
         let min_len = self.components.len().min(parsed.len());
-        let prefix_matches = self.components[..min_len]
-            .iter()
-            .zip(&parsed[..min_len])
-            .all(|(a, b)| a == b);
-        Some(if prefix_matches {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        })
+        let prefix_matches =
+            self.components[..min_len].iter().zip(&parsed[..min_len]).all(|(a, b)| a == b);
+        Some(if prefix_matches { Ordering::Equal } else { Ordering::Greater })
     }
 
     /// Returns the string form, such as `"1.2.3"`, or `"invalid"`.
@@ -187,11 +179,7 @@ impl Version {
         if !self.is_valid() {
             return "invalid".to_string();
         }
-        self.components
-            .iter()
-            .map(u32::to_string)
-            .collect::<Vec<_>>()
-            .join(".")
+        self.components.iter().map(u32::to_string).collect::<Vec<_>>().join(".")
     }
 
     /// The components of this version, such as `[1, 2, 3, 4]`.
@@ -385,34 +373,16 @@ mod tests {
                 "{lhs_str} ? {rhs_str}"
             );
 
-            // Comparison operators.
-            match expected {
-                -1 => {
-                    assert!(lhs < rhs);
-                    assert!(lhs <= rhs);
-                    assert!(lhs != rhs);
-                    assert!(!(lhs == rhs));
-                    assert!(!(lhs >= rhs));
-                    assert!(!(lhs > rhs));
-                }
-                0 => {
-                    assert!(!(lhs < rhs));
-                    assert!(lhs <= rhs);
-                    assert!(!(lhs != rhs));
-                    assert!(lhs == rhs);
-                    assert!(lhs >= rhs);
-                    assert!(!(lhs > rhs));
-                }
-                1 => {
-                    assert!(!(lhs < rhs));
-                    assert!(!(lhs <= rhs));
-                    assert!(lhs != rhs);
-                    assert!(!(lhs == rhs));
-                    assert!(lhs >= rhs);
-                    assert!(lhs > rhs);
-                }
+            // Comparison operators, as the C++ EXPECT_* checks in this order:
+            // ==, !=, <, <=, >, >=.
+            let got = [lhs == rhs, lhs != rhs, lhs < rhs, lhs <= rhs, lhs > rhs, lhs >= rhs];
+            let want = match expected {
+                -1 => [false, true, true, true, false, false],
+                0 => [true, false, false, true, false, true],
+                1 => [false, true, false, false, true, true],
                 _ => unreachable!(),
-            }
+            };
+            assert_eq!(got, want, "{lhs_str} ? {rhs_str}");
         }
     }
 
@@ -563,10 +533,8 @@ mod tests {
             let len_w = 1 + rng.below(4) as usize;
             let a: Vec<u32> = (0..len_a).map(|_| rng.below(3) as u32).collect();
             let w: Vec<u32> = (0..len_w).map(|_| rng.below(3) as u32).collect();
-            let wildcard = format!(
-                "{}.*",
-                w.iter().map(u32::to_string).collect::<Vec<_>>().join(".")
-            );
+            let wildcard =
+                format!("{}.*", w.iter().map(u32::to_string).collect::<Vec<_>>().join("."));
             let va = Version::from_components(a.clone());
             assert!(Version::is_valid_wildcard_string(&wildcard));
             assert_eq!(

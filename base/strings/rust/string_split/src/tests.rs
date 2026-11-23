@@ -29,9 +29,7 @@ fn utf16_list(list: &[&str]) -> Vec<Vec<u16>> {
 }
 
 fn pairs(list: &[(&str, &str)]) -> Pairs {
-    list.iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect()
+    list.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
 }
 
 fn owned_char(input: &str, kv: char, pair: char) -> Kv {
@@ -41,13 +39,7 @@ fn owned_char(input: &str, kv: char, pair: char) -> Kv {
 
 fn view_char(input: &str, kv: char, pair: char) -> Kv {
     let r = split_string_into_key_value_view_pairs(input, kv, pair);
-    (
-        r.complete,
-        r.pairs
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect(),
-    )
+    (r.complete, r.pairs.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect())
 }
 
 fn owned_substr(input: &str, kv: char, pair: &str) -> Kv {
@@ -57,13 +49,7 @@ fn owned_substr(input: &str, kv: char, pair: &str) -> Kv {
 
 fn view_substr(input: &str, kv: char, pair: &str) -> Kv {
     let r = split_string_into_key_value_view_pairs_using_substr(input, kv, pair);
-    (
-        r.complete,
-        r.pairs
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect(),
-    )
+    (r.complete, r.pairs.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect())
 }
 
 /// Generates one `#[test]` per output flavor, both calling `$body` with a
@@ -90,10 +76,7 @@ fn check_char_empty_string(f: CharKvFn) {
 }
 
 fn check_char_missing_key_value_delimiter(f: CharKvFn) {
-    assert_eq!(
-        f("key1,key2:value2", ':', ','),
-        (false, pairs(&[("", ""), ("key2", "value2")]))
-    );
+    assert_eq!(f("key1,key2:value2", ':', ','), (false, pairs(&[("", ""), ("key2", "value2")])));
 }
 
 fn check_char_empty_key_with_key_value_delimiter(f: CharKvFn) {
@@ -125,10 +108,7 @@ fn check_char_empty_value(f: CharKvFn) {
 }
 
 fn check_char_untrimmed_whitespace(f: CharKvFn) {
-    assert_eq!(
-        f("key1 : value1", ':', ','),
-        (true, pairs(&[("key1 ", " value1")]))
-    );
+    assert_eq!(f("key1 : value1", ':', ','), (true, pairs(&[("key1 ", " value1")])));
 }
 
 fn check_char_trimmed_whitespace(f: CharKvFn) {
@@ -246,10 +226,7 @@ fn check_substr_empty_string(f: SubstrKvFn) {
 }
 
 fn check_substr_missing_key_value_delimiter(f: SubstrKvFn) {
-    assert_eq!(
-        f("key1,,key2:value2", ':', ",,"),
-        (false, pairs(&[("", ""), ("key2", "value2")]))
-    );
+    assert_eq!(f("key1,,key2:value2", ':', ",,"), (false, pairs(&[("", ""), ("key2", "value2")])));
 }
 
 fn check_substr_missing_key_value_pair_delimiter(f: SubstrKvFn) {
@@ -260,10 +237,7 @@ fn check_substr_missing_key_value_pair_delimiter(f: SubstrKvFn) {
 }
 
 fn check_substr_untrimmed_whitespace(f: SubstrKvFn) {
-    assert_eq!(
-        f("key1 : value1", ':', ","),
-        (true, pairs(&[("key1 ", " value1")]))
-    );
+    assert_eq!(f("key1 : value1", ':', ","), (true, pairs(&[("key1 ", " value1")])));
 }
 
 fn check_substr_only_split_at_given_separator(f: SubstrKvFn) {
@@ -350,10 +324,7 @@ fn split_string_using_substr_consecutive_delimiters_skipped() {
         Trim,
         All,
     );
-    assert_eq!(
-        results,
-        strs(&["uno", "", "", "dos", "tres", "", "cuatro"])
-    );
+    assert_eq!(results, strs(&["uno", "", "", "dos", "tres", "", "cuatro"]));
 }
 
 #[test]
@@ -369,12 +340,8 @@ fn split_string_using_substr_trailing_delimiters_skipped() {
 
 #[test]
 fn split_string_piece_using_substr_string_with_no_delimiter() {
-    let results = split_string_piece_using_substr(
-        "alongwordwithnodelimiter",
-        "DELIMITER",
-        Trim,
-        All,
-    );
+    let results =
+        split_string_piece_using_substr("alongwordwithnodelimiter", "DELIMITER", Trim, All);
     assert_eq!(results, vec!["alongwordwithnodelimiter"]);
 }
 
@@ -397,10 +364,7 @@ fn split_string_piece_using_substr_consecutive_delimiters_skipped() {
         Trim,
         All,
     );
-    assert_eq!(
-        results,
-        vec!["uno", "", "", "dos", "tres", "", "cuatro"]
-    );
+    assert_eq!(results, vec!["uno", "", "", "dos", "tres", "", "cuatro"]);
 }
 
 #[test]
@@ -704,24 +668,15 @@ fn utf16_split_string_basics() {
         split_string_utf16(&u("red, green; blue:"), &u(",:;"), Trim, NonEmpty),
         utf16_list(&["red", "green", "blue"])
     );
-    assert_eq!(
-        split_string_utf16(&u(" red "), &u(" "), Trim, All),
-        utf16_list(&["", "red", ""])
-    );
+    assert_eq!(split_string_utf16(&u(" red "), &u(" "), Trim, All), utf16_list(&["", "red", ""]));
 }
 
 #[test]
 fn utf16_trims_non_ascii_whitespace() {
     // U+00A0, U+3000 and U+2028 are whitespace in kWhitespaceUTF16.
     let input = u("\u{a0}a\u{3000}\u{2028}");
-    assert_eq!(
-        split_string_utf16(&input, &[], Trim, All),
-        utf16_list(&["a"])
-    );
-    assert_eq!(
-        split_string_utf16(&input, &[], Keep, All),
-        vec![input.clone()]
-    );
+    assert_eq!(split_string_utf16(&input, &[], Trim, All), utf16_list(&["a"]));
+    assert_eq!(split_string_utf16(&input, &[], Keep, All), vec![input.clone()]);
 }
 
 #[test]
@@ -751,10 +706,8 @@ fn utf16_substr_split_matches_utf8_on_examples() {
     for (input, delim) in cases {
         for ws in [Keep, Trim] {
             for rt in [All, NonEmpty] {
-                let expected: Vec<Vec<u16>> = split_string_using_substr(input, delim, ws, rt)
-                    .iter()
-                    .map(|s| u(s))
-                    .collect();
+                let expected: Vec<Vec<u16>> =
+                    split_string_using_substr(input, delim, ws, rt).iter().map(|s| u(s)).collect();
                 assert_eq!(
                     split_string_using_substr_utf16(&u(input), &u(delim), ws, rt),
                     expected,
@@ -782,10 +735,7 @@ fn utf16_substr_empty_delimiter_returns_input_untrimmed() {
         split_string_using_substr_utf16(&u("  a  "), &[], Trim, NonEmpty),
         utf16_list(&["  a  "])
     );
-    assert_eq!(
-        split_string_using_substr_utf16(&[], &[], Trim, NonEmpty),
-        utf16_list(&[""])
-    );
+    assert_eq!(split_string_using_substr_utf16(&[], &[], Trim, NonEmpty), utf16_list(&[""]));
 }
 
 // ---------------------------------------------------------------------------
@@ -795,31 +745,19 @@ fn utf16_substr_empty_delimiter_returns_input_untrimmed() {
 #[test]
 fn utf8_trims_only_ascii_whitespace() {
     // U+00A0 is not trimmed by the UTF-8 functions (kWhitespaceASCII).
-    assert_eq!(
-        split_string_piece("\u{a0}a\u{a0},b", ",", Trim, All),
-        vec!["\u{a0}a\u{a0}", "b"]
-    );
+    assert_eq!(split_string_piece("\u{a0}a\u{a0},b", ",", Trim, All), vec!["\u{a0}a\u{a0}", "b"]);
 }
 
 #[test]
 fn utf8_trims_vertical_tab() {
     // Rust's u8::is_ascii_whitespace omits \v. The C++ set includes it.
-    assert_eq!(
-        split_string_piece("\u{0B}a\u{0B}", ",", Trim, NonEmpty),
-        vec!["a"]
-    );
+    assert_eq!(split_string_piece("\u{0B}a\u{0B}", ",", Trim, NonEmpty), vec!["a"]);
 }
 
 #[test]
 fn utf8_multibyte_separator_matches_whole_character() {
-    assert_eq!(
-        split_string_piece("a→b→c", "→", Keep, All),
-        vec!["a", "b", "c"]
-    );
-    assert_eq!(
-        split_string_piece("aéb", "é", Keep, All),
-        vec!["a", "b"]
-    );
+    assert_eq!(split_string_piece("a→b→c", "→", Keep, All), vec!["a", "b", "c"]);
+    assert_eq!(split_string_piece("aéb", "é", Keep, All), vec!["a", "b"]);
 }
 
 #[test]
@@ -833,10 +771,7 @@ fn utf8_once_multibyte_separator() {
 
 #[test]
 fn utf8_substr_empty_delimiter_quirk_is_preserved() {
-    assert_eq!(
-        split_string_using_substr("  a  ", "", Trim, NonEmpty),
-        strs(&["  a  "])
-    );
+    assert_eq!(split_string_using_substr("  a  ", "", Trim, NonEmpty), strs(&["  a  "]));
     assert_eq!(split_string_using_substr("", "", Trim, NonEmpty), strs(&[""]));
     assert!(split_string_using_substr("", "X", Keep, NonEmpty).is_empty());
     assert_eq!(split_string_using_substr("", "X", Keep, All), strs(&[""]));
@@ -844,10 +779,7 @@ fn utf8_substr_empty_delimiter_quirk_is_preserved() {
 
 #[test]
 fn utf8_substr_non_overlapping_matches() {
-    assert_eq!(
-        split_string_piece_using_substr("aaaa", "aa", Keep, All),
-        vec!["", "", ""]
-    );
+    assert_eq!(split_string_piece_using_substr("aaaa", "aa", Keep, All), vec!["", "", ""]);
 }
 
 #[test]
@@ -870,25 +802,13 @@ fn key_value_empty_pair_delimiter_quirk_is_preserved() {
     assert_eq!(r, KeyValueSplit { pairs: pairs(&[("", "")]), complete: false });
 
     let r = split_string_into_key_value_pairs_using_substr("  key1:value1 ", ':', "");
-    assert_eq!(
-        r,
-        KeyValueSplit {
-            pairs: pairs(&[("  key1", "value1 ")]),
-            complete: true
-        }
-    );
+    assert_eq!(r, KeyValueSplit { pairs: pairs(&[("  key1", "value1 ")]), complete: true });
 }
 
 #[test]
 fn key_value_non_ascii_delimiters() {
     let r = split_string_into_key_value_pairs("k→v;x→y", '→', ';');
-    assert_eq!(
-        r,
-        KeyValueSplit {
-            pairs: pairs(&[("k", "v"), ("x", "y")]),
-            complete: true
-        }
-    );
+    assert_eq!(r, KeyValueSplit { pairs: pairs(&[("k", "v"), ("x", "y")]), complete: true });
 }
 
 #[test]
@@ -929,8 +849,8 @@ impl XorShift64 {
 /// All BMP characters, so that UTF-8 and UTF-16 inputs have the same
 /// character sequence.
 const ALPHABET: &[char] = &[
-    'a', 'b', ',', ':', ' ', '\t', '\u{0B}', '\u{0C}', '\n', '\r', '\u{A0}', 'é', '→',
-    '\u{3000}', '=', '\0',
+    'a', 'b', ',', ':', ' ', '\t', '\u{0B}', '\u{0C}', '\n', '\r', '\u{A0}', 'é', '→', '\u{3000}',
+    '=', '\0',
 ];
 
 const SEPARATOR_POOL: &[char] = &[',', ':', ' ', '\t', 'é', '\0', '\u{0B}', '\u{A0}', 'b'];
@@ -942,9 +862,7 @@ fn random_text(rng: &mut XorShift64, max_len: usize) -> String {
 
 fn random_separators(rng: &mut XorShift64) -> Vec<char> {
     let n = rng.below(4);
-    (0..n)
-        .map(|_| SEPARATOR_POOL[rng.below(SEPARATOR_POOL.len())])
-        .collect()
+    (0..n).map(|_| SEPARATOR_POOL[rng.below(SEPARATOR_POOL.len())]).collect()
 }
 
 fn ref_ws_ascii(c: char) -> bool {
@@ -981,10 +899,7 @@ fn finish_reference(
                 return piece;
             }
             let start = piece.iter().position(|&c| !ws(c)).unwrap_or(piece.len());
-            let end = piece
-                .iter()
-                .rposition(|&c| !ws(c))
-                .map_or(start, |last| last + 1);
+            let end = piece.iter().rposition(|&c| !ws(c)).map_or(start, |last| last + 1);
             piece[start..end].to_vec()
         })
         .filter(|piece| keep_all || !piece.is_empty())
@@ -992,7 +907,13 @@ fn finish_reference(
         .collect()
 }
 
-fn ref_split(input: &str, seps: &[char], ws: fn(char) -> bool, trim: bool, keep_all: bool) -> Vec<String> {
+fn ref_split(
+    input: &str,
+    seps: &[char],
+    ws: fn(char) -> bool,
+    trim: bool,
+    keep_all: bool,
+) -> Vec<String> {
     if input.is_empty() {
         return Vec::new();
     }
@@ -1007,7 +928,13 @@ fn ref_split(input: &str, seps: &[char], ws: fn(char) -> bool, trim: bool, keep_
     finish_reference(pieces, ws, trim, keep_all)
 }
 
-fn ref_substr(input: &str, delim: &str, ws: fn(char) -> bool, trim: bool, keep_all: bool) -> Vec<String> {
+fn ref_substr(
+    input: &str,
+    delim: &str,
+    ws: fn(char) -> bool,
+    trim: bool,
+    keep_all: bool,
+) -> Vec<String> {
     if delim.is_empty() {
         return vec![input.to_string()];
     }
@@ -1036,10 +963,7 @@ fn ref_once(input: &str, seps: &[char], last: bool) -> Option<(String, String)> 
     } else {
         chars.iter().position(|c| seps.contains(c))
     }?;
-    Some((
-        chars[..idx].iter().collect(),
-        chars[idx + 1..].iter().collect(),
-    ))
+    Some((chars[..idx].iter().collect(), chars[idx + 1..].iter().collect()))
 }
 
 fn to_utf16_strings(list: &[String]) -> Vec<Vec<u16>> {
@@ -1081,13 +1005,7 @@ fn differential_split_string_utf16_matches_reference() {
         let sep_str: String = seps.iter().collect();
         for ws in [Keep, Trim] {
             for rt in [All, NonEmpty] {
-                let expected = ref_split(
-                    &input,
-                    &seps,
-                    ref_ws_utf16,
-                    ws == Trim,
-                    rt == All,
-                );
+                let expected = ref_split(&input, &seps, ref_ws_utf16, ws == Trim, rt == All);
                 assert_eq!(
                     split_string_utf16(&u(&input), &u(&sep_str), ws, rt),
                     to_utf16_strings(&expected),
@@ -1169,9 +1087,11 @@ fn differential_key_value_owned_and_view_agree_and_hold_invariants() {
             assert!(!ok.contains(pair), "key contains pair delimiter: {input:?}");
             assert!(!ov.contains(pair), "value contains pair delimiter: {input:?}");
         }
+        // `complete` requires a non-empty value. An empty key is allowed, as
+        // in the EmptyKeyWithKeyValueDelimiter test.
         if owned.complete {
-            for (k, v) in &owned.pairs {
-                assert!(!k.is_empty() && !v.is_empty(), "input {input:?}");
+            for (_, v) in &owned.pairs {
+                assert!(!v.is_empty(), "input {input:?}");
             }
         }
     }

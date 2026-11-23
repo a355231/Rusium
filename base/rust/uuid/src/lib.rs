@@ -79,7 +79,7 @@ fn parse_canonical(input: &[u8], strict: bool) -> Option<[u8; 16]> {
         } else {
             let value = hex_value(c, strict)?;
             // High nibble first, then low nibble.
-            let shift = if nibble_index % 2 == 0 { 4 } else { 0 };
+            let shift = if nibble_index.is_multiple_of(2) { 4 } else { 0 };
             bytes[nibble_index / 2] |= value << shift;
             nibble_index += 1;
         }
@@ -91,10 +91,7 @@ fn parse_canonical(input: &[u8], strict: bool) -> Option<[u8; 16]> {
 /// unit becomes 0, which is neither a hex digit nor a hyphen, so the input is
 /// rejected in the same cases as in C++.
 fn narrow_utf16(input: &[u16]) -> Vec<u8> {
-    input
-        .iter()
-        .map(|&unit| if unit < 0x80 { unit as u8 } else { 0 })
-        .collect()
+    input.iter().map(|&unit| if unit < 0x80 { unit as u8 } else { 0 }).collect()
 }
 
 impl Uuid {
@@ -132,30 +129,22 @@ impl Uuid {
     /// Parses `input` if it has the `Uuid` form. Letters `a` through `f` may be
     /// upper or lower case. Returns an invalid `Uuid` otherwise.
     pub fn parse_case_insensitive(input: &str) -> Uuid {
-        Uuid {
-            bytes: parse_canonical(input.as_bytes(), false),
-        }
+        Uuid { bytes: parse_canonical(input.as_bytes(), false) }
     }
 
     /// Like `parse_case_insensitive`, for UTF-16 input.
     pub fn parse_case_insensitive_utf16(input: &[u16]) -> Uuid {
-        Uuid {
-            bytes: parse_canonical(&narrow_utf16(input), false),
-        }
+        Uuid { bytes: parse_canonical(&narrow_utf16(input), false) }
     }
 
     /// Like `parse_case_insensitive`, but hex letters must be lowercase.
     pub fn parse_lowercase(input: &str) -> Uuid {
-        Uuid {
-            bytes: parse_canonical(input.as_bytes(), true),
-        }
+        Uuid { bytes: parse_canonical(input.as_bytes(), true) }
     }
 
     /// Like `parse_lowercase`, for UTF-16 input.
     pub fn parse_lowercase_utf16(input: &[u16]) -> Uuid {
-        Uuid {
-            bytes: parse_canonical(&narrow_utf16(input), true),
-        }
+        Uuid { bytes: parse_canonical(&narrow_utf16(input), true) }
     }
 
     /// Returns true if this `Uuid` is valid.
@@ -461,15 +450,11 @@ mod tests {
     fn order_matches_string_order() {
         // The derived ordering must match the order of the lowercase strings.
         let mut rng = XorShift64(0x0123_4567_89ab_cdef);
-        let uuids: Vec<Uuid> = (0..500)
-            .map(|_| Uuid::from_random_bytes_v4(rng.next_bytes16()))
-            .collect();
+        let uuids: Vec<Uuid> =
+            (0..500).map(|_| Uuid::from_random_bytes_v4(rng.next_bytes16())).collect();
         for a in &uuids {
             for b in &uuids {
-                assert_eq!(
-                    a.cmp(b),
-                    a.as_lowercase_string().cmp(&b.as_lowercase_string())
-                );
+                assert_eq!(a.cmp(b), a.as_lowercase_string().cmp(&b.as_lowercase_string()));
             }
         }
     }
