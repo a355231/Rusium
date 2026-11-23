@@ -101,17 +101,11 @@ pub struct IPAddressBytes {
 impl IPAddressBytes {
     /// Creates an empty sequence.
     pub const fn new() -> Self {
-        Self {
-            bytes: [0; MAX_LEN],
-            len: 0,
-        }
+        Self { bytes: [0; MAX_LEN], len: 0 }
     }
 
     const fn from_array(bytes: [u8; MAX_LEN], len: usize) -> Self {
-        Self {
-            bytes,
-            len: len as u8,
-        }
+        Self { bytes, len: len as u8 }
     }
 
     /// Copies `data` into a new sequence.
@@ -198,9 +192,7 @@ impl Ord for IPAddressBytes {
     // Shorter sequences sort first. Sequences of the same length compare
     // lexicographically, as C++ `IPAddressBytes::operator<` does.
     fn cmp(&self, other: &Self) -> Ordering {
-        self.len()
-            .cmp(&other.len())
-            .then_with(|| self.as_slice().cmp(other.as_slice()))
+        self.len().cmp(&other.len()).then_with(|| self.as_slice().cmp(other.as_slice()))
     }
 }
 
@@ -258,9 +250,7 @@ impl IPAddress {
     /// Copies `bytes` into a new address. Panics if there are more than 16
     /// bytes (C++ `CHECK_GE(16u, size)`).
     pub fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            ip_address: IPAddressBytes::from_slice(bytes),
-        }
+        Self { ip_address: IPAddressBytes::from_slice(bytes) }
     }
 
     /// Copies `bytes` into a new address. Returns `None` if there are more than
@@ -518,10 +508,7 @@ pub fn ip_address_matches_prefix(
 ) -> bool {
     assert!(ip_address.is_valid(), "ip_address must be valid");
     assert!(ip_prefix.is_valid(), "ip_prefix must be valid");
-    assert!(
-        prefix_length_in_bits <= ip_prefix.size() * 8,
-        "prefix longer than the address"
-    );
+    assert!(prefix_length_in_bits <= ip_prefix.size() * 8, "prefix longer than the address");
 
     if ip_address.size() != ip_prefix.size() {
         return if ip_address.is_ipv4() {
@@ -558,9 +545,7 @@ pub fn parse_cidr_block(cidr_literal: &str) -> Option<(IPAddress, usize)> {
 /// an IPv4 literal, or an IPv6 literal in square brackets, such as
 /// "[::ffff:192.168.0.1]/112".
 #[must_use]
-pub fn parse_cidr_block_non_standard_url_format(
-    cidr_literal: &str,
-) -> Option<(IPAddress, usize)> {
+pub fn parse_cidr_block_non_standard_url_format(cidr_literal: &str) -> Option<(IPAddress, usize)> {
     let (address_part, prefix_part) = split_cidr(cidr_literal)?;
     let ip_address = parse_url_hostname_to_address(address_part)?;
     let prefix_length = parse_prefix_length(prefix_part, ip_address.size() * 8)?;
@@ -574,11 +559,7 @@ pub fn parse_url_hostname_to_address(hostname: &str) -> Option<IPAddress> {
     let bytes = hostname.as_bytes();
     if bytes.len() >= 2 && bytes[0] == b'[' && bytes[bytes.len() - 1] == b']' {
         let ip_address = IPAddress::from_ip_literal(&hostname[1..hostname.len() - 1])?;
-        return if ip_address.is_ipv6() {
-            Some(ip_address)
-        } else {
-            None
-        };
+        return if ip_address.is_ipv6() { Some(ip_address) } else { None };
     }
 
     let ip_address = IPAddress::from_ip_literal(hostname)?;
@@ -704,7 +685,7 @@ pub fn convert_ipv4_to_ipv4_embedded_ipv6(
             out.extend_from_slice(v4);
             out.extend_from_slice(&[0; 8]);
         }
-        Dns64PrefixLength::Invalid => return ipv4_address.clone(),
+        Dns64PrefixLength::Invalid => return *ipv4_address,
     }
     IPAddress::from_bytes(&out)
 }
@@ -766,9 +747,7 @@ fn publicly_routable_ipv4(addr: &[u8]) -> bool {
         ([203, 0, 113, 0], 24),
         ([224, 0, 0, 0], 3),
     ];
-    !RESERVED_IPV4_RANGES
-        .iter()
-        .any(|(prefix, bits)| prefix_check(addr, prefix, *bits))
+    !RESERVED_IPV4_RANGES.iter().any(|(prefix, bits)| prefix_check(addr, prefix, *bits))
 }
 
 /// Returns true if `addr` is in an IPv6 global unicast or multicast range, or
@@ -781,10 +760,7 @@ fn publicly_routable_ipv6(addr: &[u8]) -> bool {
         // ff00::/8 -- Multicast
         ([0xFF, 0], 8),
     ];
-    if PUBLIC_IPV6_RANGES
-        .iter()
-        .any(|(prefix, bits)| prefix_check(addr, prefix, *bits))
-    {
+    if PUBLIC_IPV6_RANGES.iter().any(|(prefix, bits)| prefix_check(addr, prefix, *bits)) {
         return true;
     }
     if addr.len() == IPV6_LEN && addr[..IPV4_MAPPED_PREFIX.len()] == IPV4_MAPPED_PREFIX {
@@ -914,11 +890,11 @@ enum Ipv4Parse {
 }
 
 const fn is_dec(c: u8) -> bool {
-    matches!(c, b'0'..=b'9')
+    c.is_ascii_digit()
 }
 
 const fn is_hex(c: u8) -> bool {
-    matches!(c, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F')
+    c.is_ascii_hexdigit()
 }
 
 const fn is_ipv4_char(c: u8) -> bool {
