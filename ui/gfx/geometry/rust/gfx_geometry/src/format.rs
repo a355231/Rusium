@@ -15,36 +15,23 @@ pub fn format_g(value: f64) -> String {
     const PRECISION: i32 = 6;
 
     if value.is_nan() {
-        return if value.is_sign_negative() {
-            "-nan".to_string()
-        } else {
-            "nan".to_string()
-        };
+        return if value.is_sign_negative() { "-nan".to_string() } else { "nan".to_string() };
     }
     if value.is_infinite() {
-        return if value < 0.0 {
-            "-inf".to_string()
-        } else {
-            "inf".to_string()
-        };
+        return if value < 0.0 { "-inf".to_string() } else { "inf".to_string() };
     }
     if value == 0.0 {
-        return if value.is_sign_negative() {
-            "-0".to_string()
-        } else {
-            "0".to_string()
-        };
+        return if value.is_sign_negative() { "-0".to_string() } else { "0".to_string() };
     }
 
     // The exponent is taken after rounding to PRECISION significant digits,
     // as the C standard specifies.
     let scientific = format!("{:.*e}", (PRECISION - 1) as usize, value);
-    let (mantissa, exponent) = scientific
-        .split_once('e')
-        .expect("Rust scientific format always contains 'e'");
+    let (mantissa, exponent) =
+        scientific.split_once('e').expect("Rust scientific format always contains 'e'");
     let exponent: i32 = exponent.parse().expect("exponent is an integer");
 
-    if exponent < -4 || exponent >= PRECISION {
+    if !(-4..PRECISION).contains(&exponent) {
         let mantissa = strip_trailing_zeros(mantissa);
         let sign = if exponent < 0 { '-' } else { '+' };
         format!("{mantissa}e{sign}{:02}", exponent.abs())

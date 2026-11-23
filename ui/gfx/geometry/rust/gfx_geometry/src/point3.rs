@@ -203,7 +203,10 @@ mod tests {
 
     #[test]
     fn point3_f_test_scale() {
-        assert_eq!(Point3F::default().to_string(), scale_point3_uniform(Point3F::default(), 2.0).to_string());
+        assert_eq!(
+            Point3F::default().to_string(),
+            scale_point3_uniform(Point3F::default(), 2.0).to_string()
+        );
         assert_eq!(
             Point3F::default().to_string(),
             scale_point3(Point3F::default(), 2.0, 2.0, 2.0).to_string()

@@ -69,12 +69,6 @@ impl XorShift64 {
         self.next_u64() as u32 as i32
     }
 
-    /// Uniform `i32` in `[lo, hi]`.
-    pub fn next_i32_in(&mut self, lo: i32, hi: i32) -> i32 {
-        let span = (hi as i64 - lo as i64 + 1) as u64;
-        (lo as i64 + (self.next_u64() % span) as i64) as i32
-    }
-
     /// Uniform finite `f32` in `[lo, hi)`.
     pub fn next_f32_finite_range(&mut self, lo: f32, hi: f32) -> f32 {
         (lo as f64 + self.next_unit() * (hi as f64 - lo as f64)) as f32

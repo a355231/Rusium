@@ -76,11 +76,11 @@ pub mod vector3;
 mod test_util;
 
 pub use point::{
-    point_at_offset_from_origin, point_f_at_offset_from_origin, scale_point,
-    scale_point_uniform, scale_to_ceiled_point, scale_to_ceiled_point_uniform,
-    scale_to_floored_point, scale_to_floored_point_uniform, scale_to_rounded_point,
-    scale_to_rounded_point_uniform, to_ceiled_point, to_floored_point, to_rounded_point,
-    transpose_point, transpose_point_f, Point, PointF,
+    point_at_offset_from_origin, point_f_at_offset_from_origin, scale_point, scale_point_uniform,
+    scale_to_ceiled_point, scale_to_ceiled_point_uniform, scale_to_floored_point,
+    scale_to_floored_point_uniform, scale_to_rounded_point, scale_to_rounded_point_uniform,
+    to_ceiled_point, to_floored_point, to_rounded_point, transpose_point, transpose_point_f, Point,
+    PointF,
 };
 pub use point3::{
     point3_at_offset_from_origin, scale_point3, scale_point3_by, scale_point3_uniform, Point3F,
@@ -92,12 +92,11 @@ pub use size::{
     transpose_size, transpose_size_f, Size, SizeF,
 };
 pub use vector::{
-    normalize_vector2d, scale_vector2d, scale_vector2d_uniform, to_ceiled_vector2d,
-    to_floored_vector2d, to_rounded_vector2d, transpose_vector2d, transpose_vector2d_f,
-    cross_product_2d, dot_product_2d, Vector2d, Vector2dF,
+    cross_product_2d, dot_product_2d, normalize_vector2d, scale_vector2d, scale_vector2d_uniform,
+    to_ceiled_vector2d, to_floored_vector2d, to_rounded_vector2d, transpose_vector2d,
+    transpose_vector2d_f, Vector2d, Vector2dF,
 };
 pub use vector3::{
-    angle_between_vectors_in_degrees, clockwise_angle_between_vectors_in_degrees,
-    cross_product_3d, dot_product_3d, scale_vector3d, scale_vector3d_by, scale_vector3d_uniform,
-    Vector3dF,
+    angle_between_vectors_in_degrees, clockwise_angle_between_vectors_in_degrees, cross_product_3d,
+    dot_product_3d, scale_vector3d, scale_vector3d_by, scale_vector3d_uniform, Vector3dF,
 };

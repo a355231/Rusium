@@ -67,9 +67,12 @@ impl Vector2d {
         self.y = self.y.max(other.y);
     }
 
-    /// The square of the diagonal length. This cannot overflow `i64`.
+    /// The square of the diagonal length. Each square fits in `i64`. The sum
+    /// only overflows when both components are `i32::MIN` (the true value is
+    /// 2^63), which is undefined behavior in C++. Here it saturates to
+    /// `i64::MAX`.
     pub fn length_squared(self) -> i64 {
-        self.x as i64 * self.x as i64 + self.y as i64 * self.y as i64
+        (self.x as i64 * self.x as i64).saturating_add(self.y as i64 * self.y as i64)
     }
 
     /// The diagonal length, computed as `sqrt` in double and rounded to float.
@@ -380,8 +383,7 @@ mod tests {
 
     #[test]
     fn vector2d_test_set_to_min_max() {
-        let mut a = Vector2d::default();
-        a = Vector2d::new(3, 5);
+        let mut a = Vector2d::new(3, 5);
         assert_eq!(Vector2d::new(3, 5), a);
         a.set_to_max(Vector2d::new(2, 4));
         assert_eq!(Vector2d::new(3, 5), a);
@@ -542,8 +544,7 @@ mod tests {
 
     #[test]
     fn vector2d_f_test_set_to_min_max() {
-        let mut a = Vector2dF::default();
-        a = Vector2dF::new(3.5, 5.5);
+        let mut a = Vector2dF::new(3.5, 5.5);
         assert_eq!(Vector2dF::new(3.5, 5.5), a);
         a.set_to_max(Vector2dF::new(2.5, 4.5));
         assert_eq!(Vector2dF::new(3.5, 5.5), a);
@@ -566,6 +567,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn vector2d_f_test_length() {
         let k_float_max = f32::MAX;
         assert!(float_eq(0.0, Vector2dF::new(0.0, 0.0).length()));
@@ -584,12 +586,15 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn vector2d_f_test_slope_angle_radians() {
         // The function is required to be very accurate, so use a smaller
         // tolerance than EXPECT_FLOAT_EQ().
         let tolerance = 1e-7_f32;
         let pi = 3.1415927_f32;
-        let near = |expected: f32, actual: f32| assert!((expected - actual).abs() <= tolerance, "{expected} vs {actual}");
+        let near = |expected: f32, actual: f32| {
+            assert!((expected - actual).abs() <= tolerance, "{expected} vs {actual}")
+        };
         near(0.0, Vector2dF::new(0.0, 0.0).slope_angle_radians());
         near(0.0, Vector2dF::new(1.0, 0.0).slope_angle_radians());
         near(pi / 4.0, Vector2dF::new(1.0, 1.0).slope_angle_radians());
@@ -618,7 +623,12 @@ mod tests {
     #[test]
     fn vector2d_test_length_squared_does_not_overflow() {
         let v = Vector2d::new(i32::MIN, i32::MIN);
-        assert_eq!(2 * (i32::MIN as i64) * (i32::MIN as i64), v.length_squared());
+        // The exact value 2^63 does not fit, so it saturates.
+        assert_eq!(i64::MAX, v.length_squared());
+        assert_eq!(
+            (i32::MIN as i64) * (i32::MIN as i64) + 9,
+            Vector2d::new(i32::MIN, 3).length_squared()
+        );
     }
 
     #[test]
@@ -629,7 +639,9 @@ mod tests {
     #[test]
     fn vector2d_f_test_length_squared_is_double() {
         let v = Vector2dF::new(1.0e20, 1.0e20);
-        assert!(double_eq(2.0e40, v.length_squared()));
+        // 1e20 is not exact in float, so compare against the exact f64 square.
+        let x = 1.0e20_f32 as f64;
+        assert!(double_eq(2.0 * x * x, v.length_squared()));
     }
 
     #[test]
@@ -654,7 +666,10 @@ mod tests {
         assert_eq!(Vector2d::new(0, 3), to_ceiled_vector2d(v));
         // floor(x + 0.5): -0.5 + 0.5 = 0 and 2.5 + 0.5 = 3.
         assert_eq!(Vector2d::new(0, 3), to_rounded_vector2d(v));
-        assert_eq!(Vector2d::new(i32::MAX, i32::MIN), to_floored_vector2d(Vector2dF::new(1e30, -1e30)));
+        assert_eq!(
+            Vector2d::new(i32::MAX, i32::MIN),
+            to_floored_vector2d(Vector2dF::new(1e30, -1e30))
+        );
         assert_eq!(Vector2d::new(0, 0), to_rounded_vector2d(Vector2dF::new(f32::NAN, f32::NAN)));
     }
 
@@ -662,8 +677,14 @@ mod tests {
     fn vector2d_f_test_random_add_sub_matches_float_reference() {
         let mut rng = XorShift64::new(3);
         for _ in 0..5_000 {
-            let a = Vector2dF::new(rng.next_f32_finite_range(-1e6, 1e6), rng.next_f32_finite_range(-1e6, 1e6));
-            let b = Vector2dF::new(rng.next_f32_finite_range(-1e6, 1e6), rng.next_f32_finite_range(-1e6, 1e6));
+            let a = Vector2dF::new(
+                rng.next_f32_finite_range(-1e6, 1e6),
+                rng.next_f32_finite_range(-1e6, 1e6),
+            );
+            let b = Vector2dF::new(
+                rng.next_f32_finite_range(-1e6, 1e6),
+                rng.next_f32_finite_range(-1e6, 1e6),
+            );
             assert_eq!(Vector2dF::new(a.x() + b.x(), a.y() + b.y()), a + b);
             assert_eq!(Vector2dF::new(a.x() - b.x(), a.y() - b.y()), a - b);
         }
@@ -677,11 +698,17 @@ mod tests {
             let b = Vector2d::new(rng.next_i32(), rng.next_i32());
             let clamp = |v: i64| v.clamp(i32::MIN as i64, i32::MAX as i64) as i32;
             assert_eq!(
-                Vector2d::new(clamp(a.x() as i64 + b.x() as i64), clamp(a.y() as i64 + b.y() as i64)),
+                Vector2d::new(
+                    clamp(a.x() as i64 + b.x() as i64),
+                    clamp(a.y() as i64 + b.y() as i64)
+                ),
                 a + b
             );
             assert_eq!(
-                Vector2d::new(clamp(a.x() as i64 - b.x() as i64), clamp(a.y() as i64 - b.y() as i64)),
+                Vector2d::new(
+                    clamp(a.x() as i64 - b.x() as i64),
+                    clamp(a.y() as i64 - b.y() as i64)
+                ),
                 a - b
             );
         }

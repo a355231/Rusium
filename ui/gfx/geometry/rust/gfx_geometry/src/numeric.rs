@@ -16,6 +16,10 @@ pub const FLOAT_GEOMETRY_MAX: f32 = (f32::MAX as f64 / 1e6) as f32;
 /// `numeric_limits<float>::lowest() / 1e6`.
 pub const FLOAT_GEOMETRY_LOWEST: f32 = (f32::MIN as f64 / 1e6) as f32;
 
+// The clamp limits are far inside the float range.
+const _: () = assert!(FLOAT_GEOMETRY_MAX < f32::MAX / 1e5);
+const _: () = assert!(FLOAT_GEOMETRY_LOWEST > f32::MIN / 1e5);
+
 /// Clamps `value` to `[FLOAT_GEOMETRY_LOWEST, FLOAT_GEOMETRY_MAX]`, returning
 /// 0 for NaN. This is `gfx::ClampFloatGeometry`, which takes `float`, `double`
 /// or `long double`. Float inputs are widened to `f64` before the call. The
@@ -92,16 +96,16 @@ mod tests {
         assert_eq!(clamp_float_geometry(f64::NAN), 0.0);
         assert_eq!(clamp_float_geometry(f64::INFINITY), FLOAT_GEOMETRY_MAX);
         assert_eq!(clamp_float_geometry(f64::NEG_INFINITY), FLOAT_GEOMETRY_LOWEST);
-        assert_eq!(clamp_float_geometry(1e30), FLOAT_GEOMETRY_MAX);
-        assert_eq!(clamp_float_geometry(-1e30), FLOAT_GEOMETRY_LOWEST);
+        // Values inside float range but above max() / 1e6 are clamped too.
+        assert_eq!(clamp_float_geometry(1e30), 1e30);
+        assert_eq!(clamp_float_geometry(1e33), FLOAT_GEOMETRY_MAX);
+        assert_eq!(clamp_float_geometry(-1e33), FLOAT_GEOMETRY_LOWEST);
         assert_eq!(clamp_float_geometry(1.5), 1.5);
         assert_eq!(clamp_float_geometry(-0.25), -0.25);
     }
 
     #[test]
     fn clamp_float_geometry_bounds_are_below_float_max() {
-        assert!(FLOAT_GEOMETRY_MAX < f32::MAX / 1e5);
-        assert!(FLOAT_GEOMETRY_LOWEST > f32::MIN / 1e5);
         assert_eq!(clamp_float_geometry(FLOAT_GEOMETRY_MAX as f64), FLOAT_GEOMETRY_MAX);
     }
 

@@ -60,8 +60,7 @@ impl Size {
     /// Returns the area, panicking if it does not fit in `i32`. This is
     /// `Size::GetArea()`, which CHECK-fails in the same case.
     pub fn area(self) -> i32 {
-        self.checked_area()
-            .expect("Size::area() overflows int")
+        self.checked_area().expect("Size::area() overflows int")
     }
 
     /// Returns the area, or `None` if it does not fit in `i32`. This is
@@ -270,12 +269,7 @@ impl SizeF {
 impl fmt::Display for SizeF {
     /// `"%gx%g"`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}x{}",
-            format_g(self.width as f64),
-            format_g(self.height as f64)
-        )
+        write!(f, "{}x{}", format_g(self.width as f64), format_g(self.height as f64))
     }
 }
 
@@ -397,8 +391,7 @@ mod tests {
 
     #[test]
     fn size_test_set_to_min_max() {
-        let mut a = Size::default();
-        a = Size::new(3, 5);
+        let mut a = Size::new(3, 5);
         assert_eq!(Size::new(3, 5).to_string(), a.to_string());
         a.set_to_max(Size::new(2, 4));
         assert_eq!(Size::new(3, 5).to_string(), a.to_string());
@@ -562,8 +555,7 @@ mod tests {
 
     #[test]
     fn size_f_test_set_to_min_max() {
-        let mut a = SizeF::default();
-        a = SizeF::new(3.5, 5.5);
+        let mut a = SizeF::new(3.5, 5.5);
         assert_eq!(SizeF::new(3.5, 5.5).to_string(), a.to_string());
         a.set_to_max(SizeF::new(2.5, 4.5));
         assert_eq!(SizeF::new(3.5, 5.5).to_string(), a.to_string());

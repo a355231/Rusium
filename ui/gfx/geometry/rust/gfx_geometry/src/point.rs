@@ -130,10 +130,7 @@ impl Sub<Vector2d> for Point {
 impl Sub<Point> for Point {
     type Output = Vector2d;
     fn sub(self, rhs: Point) -> Vector2d {
-        Vector2d::new(
-            self.x.saturating_sub(rhs.x),
-            self.y.saturating_sub(rhs.y),
-        )
+        Vector2d::new(self.x.saturating_sub(rhs.x), self.y.saturating_sub(rhs.y))
     }
 }
 
@@ -434,9 +431,7 @@ mod tests {
 
     #[test]
     fn point_test_set_to_min_max() {
-        let mut a = Point::default();
-
-        a = Point::new(3, 5);
+        let mut a = Point::new(3, 5);
         assert_eq!(Point::new(3, 5), a);
         a.set_to_max(Point::new(2, 4));
         assert_eq!(Point::new(3, 5), a);
@@ -631,8 +626,7 @@ mod tests {
 
     #[test]
     fn point_f_test_set_to_min_max() {
-        let mut a = PointF::default();
-        a = PointF::new(3.5, 5.5);
+        let mut a = PointF::new(3.5, 5.5);
         assert_eq!(PointF::new(3.5, 5.5), a);
         a.set_to_max(PointF::new(2.5, 4.5));
         assert_eq!(PointF::new(3.5, 5.5), a);
@@ -686,9 +680,11 @@ mod tests {
     fn point_f_test_partial_ord_with_nan_is_incomparable() {
         let nan = PointF::new(f32::NAN, 0.0);
         assert_eq!(PointF::new(1.0, 2.0).partial_cmp(&PointF::new(1.0, 3.0)), Some(Ordering::Less));
-        assert_eq!(PointF::new(1.0, 2.0).partial_cmp(&PointF::new(1.0, 2.0)), Some(Ordering::Equal));
+        assert_eq!(
+            PointF::new(1.0, 2.0).partial_cmp(&PointF::new(1.0, 2.0)),
+            Some(Ordering::Equal)
+        );
         assert_eq!(nan.partial_cmp(&nan), None);
-        assert!(!(nan < nan));
     }
 
     #[test]
