@@ -112,6 +112,12 @@ use a plain `Vec`, so memory use is higher than the packed C++ layout;
 Not yet done for the pilot: GN integration, switching the C++ callers, and
 differential testing against the real C++ build (needs `gclient sync`).
 
+## Progress
+
+See `STATUS.md` for the per-crate record of what is ported and how it was
+verified. After wave 1 there are 22 crates and 722 passing tests, about 0.1%
+of the first-party C++.
+
 ## What is left
 
 The full goal needs, at minimum:
