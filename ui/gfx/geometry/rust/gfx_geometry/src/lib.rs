@@ -15,6 +15,19 @@
 //!   conversions (`vector2d.{h,cc}`, `vector2d_f.{h,cc}`,
 //!   `vector2d_conversions.{h,cc}`).
 //! - `vector3.rs`: `gfx::Vector3dF` (`vector3d_f.{h,cc}`).
+//! - `rect.rs`: `gfx::Rect` and its set operations and scaling helpers
+//!   (`rect.{h,cc}`).
+//! - `rect_f.rs`: `gfx::RectF` (`rect_f.{h,cc}`).
+//! - `rect_conversions.rs`: `RectF` to `Rect` conversions
+//!   (`rect_conversions.{h,cc}`).
+//! - `insets.rs`, `outsets.rs`, `insets_f.rs`, `outsets_f.rs`: `gfx::Insets`,
+//!   `gfx::Outsets`, `gfx::InsetsF` and `gfx::OutsetsF`, with the shared bases
+//!   in `insets_outsets_base.rs` and `insets_outsets_f_base.rs`
+//!   (`insets.{h,cc}`, `outsets.h`, `insets_f.{h,cc}`, `outsets_f.h`,
+//!   `insets_outsets_base.{h,cc}`, `insets_outsets_f_base.{h,cc}`).
+//! - `insets_conversions.rs`: `InsetsF` to `Insets` conversions
+//!   (`insets_conversions.{h,cc}`).
+//! - `box_f.rs`: `gfx::BoxF` (`box_f.{h,cc}`).
 //! - `numeric.rs`: the saturating and clamping helpers the C++ code takes from
 //!   `base::ClampAdd`, `base::ClampSub`, `base::ClampFloor`, `base::ClampCeil`,
 //!   `base::ClampRound` and `gfx::ClampFloatGeometry`
@@ -51,23 +64,47 @@
 //!   `base::saturated_cast` does. Inputs are `f32` only, because every caller
 //!   in this family passes a `float`.
 //!
+//! Rect and insets differences:
+//! - `Rect` and `RectF` constructors and set operations are named for Rust
+//!   (see `rect.rs`). Free functions that C++ overloads on `Rect` and `RectF`
+//!   have an `_f` suffix on the `RectF` versions.
+//! - `RectF` float rounding follows the C++ code, including the `nextafter`
+//!   growth in `BoundingRect` and `UnionEvenIfEmpty`.
+//! - `ToString()` of `Insets`/`Outsets` prints integers in decimal. The C++
+//!   passes `int` to `%g`, which is undefined behavior.
+//! - `BoxF::ToString()` uses `%f` (`format::format_f`).
+//!
 //! Not ported:
-//! - Windows (`POINT`, `SIZE`, `DWORD` constructors and `ToPOINT`/`ToSIZE`)
-//!   and Apple (`CGPoint`/`CGSize` constructors and `ToCGPoint`/`ToCGSize`)
-//!   platform conversions.
+//! - Windows (`POINT`, `SIZE`, `RECT`, `DWORD` constructors and `ToPOINT`,
+//!   `ToSIZE`, `ToRECT`) and Apple (`CGPoint`/`CGSize`/`CGRect` constructors and
+//!   `ToCGPoint`/`ToCGSize`/`ToCGRect`) platform conversions.
 //! - `skia_conversions.{h,cc}` (Skia `SkPoint`/`SkISize` conversions) and the
 //!   `mojom/` type traits.
 //! - `PrintTo` (gtest printers), `WriteIntoTrace` (perfetto tracing), and the
 //!   `FORWARD_DECLARE_TEST`/`FRIEND_TEST` hooks.
-//! - Everything else in `ui/gfx/geometry/` (rect, insets, transform, matrix,
-//!   quaternion, and so on), which later waves port.
+//! - `rrect_f.{h,cc}`, `rrect_f_builder.{h,cc}`, `triangle`, `line_f`, `quad_f`,
+//!   `axis_transform2d`, `transform`, `matrix3`, `quaternion`, `cubic_bezier`,
+//!   and `linear_gradient` (not in this port).
+//! - Everything else in `ui/gfx/geometry/` (transform, matrix, quaternion,
+//!   rrect, and so on), which later waves port.
 
 #![forbid(unsafe_code)]
 
+pub mod box_f;
 pub mod format;
+pub mod insets;
+pub mod insets_conversions;
+pub mod insets_f;
+pub mod insets_outsets_base;
+pub mod insets_outsets_f_base;
 pub mod numeric;
+pub mod outsets;
+pub mod outsets_f;
 pub mod point;
 pub mod point3;
+pub mod rect;
+pub mod rect_conversions;
+pub mod rect_f;
 pub mod size;
 pub mod vector;
 pub mod vector3;
@@ -99,4 +136,30 @@ pub use vector::{
 pub use vector3::{
     angle_between_vectors_in_degrees, clockwise_angle_between_vectors_in_degrees, cross_product_3d,
     dot_product_3d, scale_vector3d, scale_vector3d_by, scale_vector3d_uniform, Vector3dF,
+};
+pub use box_f::{scale_box, scale_box_uniform, union_boxes, BoxF};
+pub use insets::{
+    scale_to_ceiled_insets, scale_to_ceiled_insets_uniform, scale_to_floored_insets,
+    scale_to_floored_insets_uniform, scale_to_rounded_insets, scale_to_rounded_insets_uniform,
+    Insets,
+};
+pub use insets_conversions::{to_ceiled_insets, to_floored_insets, to_rounded_insets};
+pub use insets_f::{scale_insets, scale_insets_uniform, InsetsF};
+pub use outsets::Outsets;
+pub use outsets_f::OutsetsF;
+pub use rect::{
+    bounding_rect, intersect_rects, maximum_covered_rect, scale_to_enclosed_rect,
+    scale_to_enclosed_rect_uniform, scale_to_enclosing_rect, scale_to_enclosing_rect_ignoring_error,
+    scale_to_enclosing_rect_uniform, scale_to_rounded_rect, scale_to_rounded_rect_uniform,
+    subtract_rects, union_rects, union_rects_even_if_empty, union_rects_slice, Rect,
+};
+pub use rect_conversions::{
+    is_nearest_rect_within_distance, to_enclosed_rect, to_enclosed_rect_ignoring_error,
+    to_enclosing_rect, to_enclosing_rect_ignoring_error, to_floored_rect_deprecated,
+    to_nearest_rect, to_rounded_rect,
+};
+pub use rect_f::{
+    bounding_rect_f, intersect_rects_f, map_rect, maximum_covered_rect_f, scale_rect,
+    scale_rect_by_size, scale_rect_uniform, subtract_rects_f, transpose_rect_f, union_rects_f,
+    union_rects_even_if_empty_f, union_rects_slice_f, RectF,
 };

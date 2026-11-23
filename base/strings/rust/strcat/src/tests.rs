@@ -13,10 +13,7 @@ fn str_cat_8bit() {
     assert_eq!("122", str_cat(&["1", "22"]));
     assert_eq!("122333", str_cat(&["1", "22", "333"]));
     assert_eq!("1223334444", str_cat(&["1", "22", "333", "4444"]));
-    assert_eq!(
-        "122333444455555",
-        str_cat(&["1", "22", "333", "4444", "55555"])
-    );
+    assert_eq!("122333444455555", str_cat(&["1", "22", "333", "4444", "55555"]));
 }
 
 #[test]
@@ -27,14 +24,14 @@ fn str_cat_16bit() {
     let u = |s: &str| -> Vec<u16> { s.encode_utf16().collect() };
 
     assert_eq!(u(""), str_cat16(&[Vec::<u16>::new()]));
-    assert_eq!(u("1"), str_cat16(&[arg1.clone()]));
+    assert_eq!(u("1"), str_cat16(std::slice::from_ref(&arg1)));
     assert_eq!(u("122"), str_cat16(&[arg1.clone(), arg2.clone()]));
     assert_eq!(u("122333"), str_cat16(&[arg1, arg2, arg3]));
 }
 
 #[test]
 fn str_append_8bit() {
-    let mut result = String::new();
+    let mut result: String;
 
     result = "foo".to_string();
     str_append(&mut result, &[String::new()]);
@@ -115,7 +112,12 @@ fn random_matches_naive_concatenation() {
 
         assert_eq!(str_cat(&pieces), expected);
         let expected16: Vec<u16> = expected.encode_utf16().collect();
-        assert_eq!(str_cat16(&pieces.iter().map(|p| p.encode_utf16().collect::<Vec<u16>>()).collect::<Vec<_>>()), expected16);
+        assert_eq!(
+            str_cat16(
+                &pieces.iter().map(|p| p.encode_utf16().collect::<Vec<u16>>()).collect::<Vec<_>>()
+            ),
+            expected16
+        );
 
         let prefix = "prefix:";
         let mut dest = prefix.to_string();

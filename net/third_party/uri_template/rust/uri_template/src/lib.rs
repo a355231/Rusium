@@ -38,7 +38,7 @@
 //!
 //! Testing: `src/lib.rs` ports every `TEST_F` from `uri_template_test.cc`. It
 //! also adds randomized property tests driven by a small xorshift PRNG.
-//! `tests/cpp_golden.rs` checks about 500 generated templates against the
+//! `tests/cpp_golden.rs` checks 498 templates against the
 //! unmodified C++ `Expand`, built with stand-in headers (see that file).
 
 #![forbid(unsafe_code)]
@@ -252,10 +252,7 @@ mod tests {
             (b"bad_percent", b"%1"),
             (b"escaped", b" !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~\x80\xFF"),
         ];
-        pairs
-            .iter()
-            .map(|(k, v)| (k.to_vec(), v.to_vec()))
-            .collect()
+        pairs.iter().map(|(k, v)| (k.to_vec(), v.to_vec())).collect()
     }
 
     fn vars(names: &[&str]) -> BTreeSet<Vec<u8>> {
@@ -273,11 +270,7 @@ mod tests {
         let result = expand(template.as_bytes(), &parameters(), Some(&mut found));
         assert_eq!(expected_validity, result.is_ok(), "validity of {template:?}");
         let output = result.unwrap_or_default();
-        assert_eq!(
-            expected_expansion.as_bytes(),
-            output.as_slice(),
-            "expansion of {template:?}"
-        );
+        assert_eq!(expected_expansion.as_bytes(), output.as_slice(), "expansion of {template:?}");
         if let Some(expected_vars) = expected_vars {
             assert_eq!(expected_vars, &found, "vars of {template:?}");
         }
@@ -373,12 +366,7 @@ mod tests {
         check_expansion("map?{x,z,y}", "map?1024,768", true, Some(&expected_vars));
         check_expansion("map{?x,z,y}", "map?x=1024&y=768", true, Some(&expected_vars));
         expected_vars = vars(&["y", "path"]);
-        check_expansion(
-            "{+path}{/z}{?y}&k=24",
-            "/foo/bar?y=768&k=24",
-            true,
-            Some(&expected_vars),
-        );
+        check_expansion("{+path}{/z}{?y}&k=24", "/foo/bar?y=768&k=24", true, Some(&expected_vars));
         check_expansion("map?{}", "map?", true, None);
         check_expansion("{y}{+path}", "768/foo/bar", true, Some(&expected_vars));
     }
@@ -472,9 +460,31 @@ mod tests {
     #[test]
     fn random_token_soup_never_panics_and_reports_real_names() {
         const TOKENS: &[&[u8]] = &[
-            b"{", b"}", b"{var}", b"{x,y}", b"{+path}", b"{#hello}", b"{.x}", b"{/y}",
-            b"{;empty}", b"{?x,empty}", b"{&y}", b"{z}", b"{ x}", b"{}", b"{{", b"}}",
-            b"a", b"%", b" ", b",", b"+", b"\xC3\xA9", b"\x80", b"{x,", b"x}",
+            b"{",
+            b"}",
+            b"{var}",
+            b"{x,y}",
+            b"{+path}",
+            b"{#hello}",
+            b"{.x}",
+            b"{/y}",
+            b"{;empty}",
+            b"{?x,empty}",
+            b"{&y}",
+            b"{z}",
+            b"{ x}",
+            b"{}",
+            b"{{",
+            b"}}",
+            b"a",
+            b"%",
+            b" ",
+            b",",
+            b"+",
+            b"\xC3\xA9",
+            b"\x80",
+            b"{x,",
+            b"x}",
         ];
         let params = parameters();
         let mut rng = XorShift(0x0123_4567_89AB_CDEF);

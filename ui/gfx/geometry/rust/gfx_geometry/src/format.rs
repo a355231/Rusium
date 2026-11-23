@@ -41,6 +41,20 @@ pub fn format_g(value: f64) -> String {
     }
 }
 
+/// Formats `value` the way C `printf("%f", value)` does: six digits after the
+/// decimal point, with the sign kept for negative zero. NaN and infinity print
+/// as `nan`, `-nan`, `inf` and `-inf`.
+pub fn format_f(value: f32) -> String {
+    let value = value as f64;
+    if value.is_nan() {
+        return if value.is_sign_negative() { "-nan".to_string() } else { "nan".to_string() };
+    }
+    if value.is_infinite() {
+        return if value < 0.0 { "-inf".to_string() } else { "inf".to_string() };
+    }
+    format!("{value:.6}")
+}
+
 fn strip_trailing_zeros(s: &str) -> String {
     if s.contains('.') {
         s.trim_end_matches('0').trim_end_matches('.').to_string()

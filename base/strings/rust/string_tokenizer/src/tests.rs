@@ -458,11 +458,8 @@ macro_rules! tokenizer_unittests {
             fn parse_with_whitespace_no_quotes() {
                 let input = $enc("\t\t\t     foo=a,\r\n b,\r\n\t\t\t      bar\t ");
                 let delims = $enc(",");
-                let mut t = $tok::with_whitespace_policy(
-                    &input,
-                    &delims,
-                    WhitespacePolicy::SkipOver,
-                );
+                let mut t =
+                    $tok::with_whitespace_policy(&input, &delims, WhitespacePolicy::SkipOver);
 
                 assert!(t.get_next());
                 assert_eq!(t.token(), &$enc("foo=a")[..]);
@@ -481,11 +478,8 @@ macro_rules! tokenizer_unittests {
                 let input = $enc("\t\t\t     foo='a, b',\t\t\t      bar\t ");
                 let delims = $enc(",");
                 let quotes = $enc("'");
-                let mut t = $tok::with_whitespace_policy(
-                    &input,
-                    &delims,
-                    WhitespacePolicy::SkipOver,
-                );
+                let mut t =
+                    $tok::with_whitespace_policy(&input, &delims, WhitespacePolicy::SkipOver);
                 t.set_quote_chars(&quotes);
 
                 assert!(t.get_next());
@@ -565,16 +559,11 @@ fn no_quotes_no_options_matches_split_ignoring_empty() {
             .filter(|p| !p.is_empty())
             .map(str::to_string)
             .collect();
-        let got: Vec<String> = collect_str(
-            &input,
-            delims,
-            None,
-            0,
-            WhitespacePolicy::IncludeInTokens,
-        )
-        .into_iter()
-        .map(|(_, s)| s)
-        .collect();
+        let got: Vec<String> =
+            collect_str(&input, delims, None, 0, WhitespacePolicy::IncludeInTokens)
+                .into_iter()
+                .map(|(_, s)| s)
+                .collect();
         assert_eq!(got, expected, "input={input:?} delims={delims:?}");
     }
 }
@@ -591,11 +580,10 @@ fn skip_over_no_quotes_matches_split_on_delims_and_whitespace() {
             .filter(|p| !p.is_empty())
             .map(str::to_string)
             .collect();
-        let got: Vec<String> =
-            collect_str(&input, delims, None, 0, WhitespacePolicy::SkipOver)
-                .into_iter()
-                .map(|(_, s)| s)
-                .collect();
+        let got: Vec<String> = collect_str(&input, delims, None, 0, WhitespacePolicy::SkipOver)
+            .into_iter()
+            .map(|(_, s)| s)
+            .collect();
         assert_eq!(got, expected, "input={input:?}");
     }
 }
@@ -618,16 +606,11 @@ fn empty_tokens_match_std_split() {
         let input = rng.string_from(&alphabet, 12);
         let expected: Vec<String> =
             input.split(|c: char| c == ',' || c == ';').map(str::to_string).collect();
-        let got: Vec<String> = collect_str(
-            &input,
-            ",;",
-            None,
-            RETURN_EMPTY_TOKENS,
-            WhitespacePolicy::IncludeInTokens,
-        )
-        .into_iter()
-        .map(|(_, s)| s)
-        .collect();
+        let got: Vec<String> =
+            collect_str(&input, ",;", None, RETURN_EMPTY_TOKENS, WhitespacePolicy::IncludeInTokens)
+                .into_iter()
+                .map(|(_, s)| s)
+                .collect();
         assert_eq!(got, expected, "input={input:?}");
     }
 }
@@ -691,11 +674,13 @@ fn str_and_u16_flavors_agree_on_ascii() {
         let delims16: Vec<u16> = delims.encode_utf16().collect();
         let quotes = "'\\";
         let quotes16: Vec<u16> = quotes.encode_utf16().collect();
-        for options in [0, RETURN_DELIMS, RETURN_EMPTY_TOKENS, RETURN_DELIMS | RETURN_EMPTY_TOKENS] {
+        for options in [0, RETURN_DELIMS, RETURN_EMPTY_TOKENS, RETURN_DELIMS | RETURN_EMPTY_TOKENS]
+        {
             for with_quotes in [false, true] {
                 for policy in [WhitespacePolicy::IncludeInTokens, WhitespacePolicy::SkipOver] {
                     let mut a = StringTokenizer::with_whitespace_policy(&input, delims, policy);
-                    let mut b = StringTokenizer16::with_whitespace_policy(&input16, &delims16, policy);
+                    let mut b =
+                        StringTokenizer16::with_whitespace_policy(&input16, &delims16, policy);
                     a.set_options(options);
                     b.set_options(options);
                     if with_quotes {
@@ -730,13 +715,10 @@ fn non_ascii_text_with_ascii_delims() {
     assert_eq!(got, vec!["héllo", " wörld", "日本"]);
     let input16: Vec<u16> = input.encode_utf16().collect();
     let delims16: Vec<u16> = vec![u16::from(b',')];
-    let got16: Vec<Vec<u16>> = StringTokenizer16::new(&input16, &delims16)
-        .map(|t| t.to_vec())
-        .collect();
-    let expect16: Vec<Vec<u16>> = ["héllo", " wörld", "日本"]
-        .iter()
-        .map(|s| s.encode_utf16().collect())
-        .collect();
+    let got16: Vec<Vec<u16>> =
+        StringTokenizer16::new(&input16, &delims16).map(|t| t.to_vec()).collect();
+    let expect16: Vec<Vec<u16>> =
+        ["héllo", " wörld", "日本"].iter().map(|s| s.encode_utf16().collect()).collect();
     assert_eq!(got16, expect16);
 }
 

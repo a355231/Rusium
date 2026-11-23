@@ -318,7 +318,7 @@ impl Rect {
     }
 
     /// Returns true if the area of the rectangle is zero.
-    pub const fn is_empty(self) -> bool {
+    pub fn is_empty(self) -> bool {
         self.size.is_empty()
     }
 
@@ -343,7 +343,7 @@ impl Rect {
 
     /// Returns true if the two rectangles overlap. An empty rectangle
     /// intersects nothing.
-    pub const fn intersects(self, rect: Rect) -> bool {
+    pub fn intersects(self, rect: Rect) -> bool {
         !(self.is_empty()
             || rect.is_empty()
             || rect.x() >= self.right()

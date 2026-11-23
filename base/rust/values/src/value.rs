@@ -295,8 +295,10 @@ impl Value {
         if !self.is_string() {
             self.type_mismatch(ValueType::String);
         }
-        self.get_if_string_mut()
-            .unwrap_or_else(|| self.type_mismatch(ValueType::String))
+        match &mut self.data {
+            Data::String(s) => s,
+            _ => unreachable!("type checked above"),
+        }
     }
 
     /// `GetBlob()`. Panics if the value is not binary.
@@ -310,8 +312,10 @@ impl Value {
         if !self.is_blob() {
             self.type_mismatch(ValueType::Binary);
         }
-        self.get_if_blob_mut()
-            .unwrap_or_else(|| self.type_mismatch(ValueType::Binary))
+        match &mut self.data {
+            Data::Blob(b) => b,
+            _ => unreachable!("type checked above"),
+        }
     }
 
     /// `GetDict()`. Panics if the value is not a dictionary.
@@ -325,8 +329,10 @@ impl Value {
         if !self.is_dict() {
             self.type_mismatch(ValueType::Dict);
         }
-        self.get_if_dict_mut()
-            .unwrap_or_else(|| self.type_mismatch(ValueType::Dict))
+        match &mut self.data {
+            Data::Dict(d) => d,
+            _ => unreachable!("type checked above"),
+        }
     }
 
     /// `GetList()`. Panics if the value is not a list.
@@ -340,8 +346,10 @@ impl Value {
         if !self.is_list() {
             self.type_mismatch(ValueType::List);
         }
-        self.get_if_list_mut()
-            .unwrap_or_else(|| self.type_mismatch(ValueType::List))
+        match &mut self.data {
+            Data::List(l) => l,
+            _ => unreachable!("type checked above"),
+        }
     }
 
     // Take*(): consume the value and return the contents. Panic on a type

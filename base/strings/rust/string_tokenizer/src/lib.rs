@@ -295,11 +295,7 @@ impl<'a, S: Units + ?Sized> StringTokenizerT<'a, S> {
     // Scanner used when quotes or options are set. Mirrors FullGetNext().
     fn full_get_next(&mut self) -> bool {
         let text = self.text;
-        let mut state = AdvanceState {
-            in_quote: false,
-            in_escape: false,
-            quote_char: S::ascii(0),
-        };
+        let mut state = AdvanceState { in_quote: false, in_escape: false, quote_char: S::ascii(0) };
 
         self.skip_whitespace();
         loop {
@@ -319,9 +315,7 @@ impl<'a, S: Units + ?Sized> StringTokenizerT<'a, S> {
 
                 // Return the token if it is non-empty, or if empty tokens were
                 // requested.
-                if self.token_begin != self.token_end
-                    || (self.options & RETURN_EMPTY_TOKENS) != 0
-                {
+                if self.token_begin != self.token_end || (self.options & RETURN_EMPTY_TOKENS) != 0 {
                     return true;
                 }
             }
