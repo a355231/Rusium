@@ -279,13 +279,13 @@ mod tests {
     }
 
     #[test]
-    fn DefaultConstructor() {
+    fn default_constructor() {
         let v = Version::default();
         assert!(!v.is_valid());
     }
 
     #[test]
-    fn ValueSemantics() {
+    fn value_semantics() {
         let v1 = Version::new("1.2.3.4");
         assert!(v1.is_valid());
         let mut v3 = Version::default();
@@ -300,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn MoveSemantics() {
+    fn move_semantics() {
         let components = vec![1, 2, 3, 4];
         let v1 = Version::from_components(components);
         assert!(v1.is_valid());
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn GetVersionFromString() {
+    fn get_version_from_string() {
         // (input, number of parts, first part, success)
         let cases: &[(&str, usize, u32, bool)] = &[
             ("", 0, 0, false),
@@ -351,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn Compare() {
+    fn compare() {
         // (lhs, rhs, expected)
         let cases: &[(&str, &str, i32)] = &[
             ("1.0", "1.0", 0),
@@ -417,7 +417,7 @@ mod tests {
     }
 
     #[test]
-    fn CompareToWildcardString() {
+    fn compare_to_wildcard_string_cases() {
         // (lhs, wildcard, expected)
         let cases: &[(&str, &str, i32)] = &[
             ("1.0", "1.*", 0),
@@ -442,7 +442,7 @@ mod tests {
     }
 
     #[test]
-    fn IsValidWildcardString() {
+    fn is_valid_wildcard_string_cases() {
         // (version, expected)
         let cases: &[(&str, bool)] = &[
             ("1.0", true),
@@ -467,7 +467,7 @@ mod tests {
     }
 
     #[test]
-    fn LeadingZeros() {
+    fn leading_zeros() {
         {
             // Leading zeros in the first component are not allowed.
             let v = Version::new("01.1");
@@ -489,7 +489,7 @@ mod tests {
     }
 
     #[test]
-    fn GetString() {
+    fn get_string_cases() {
         // (version, valid, string)
         let cases: &[(&str, bool, &str)] = &[
             ("", false, "invalid"),
@@ -519,12 +519,13 @@ mod tests {
         assert_eq!(Version::default().to_string(), "invalid");
         // Operands that are invalid are not comparable.
         let invalid = Version::default();
+        let other_invalid = Version::default();
         let valid = Version::new("1.0");
         assert_eq!(invalid.compare_to(&valid), None);
         assert_eq!(valid.compare_to_wildcard_string("1.*.2"), None);
         assert_eq!(valid.compare_to_wildcard_string("*"), None);
-        assert!(!(invalid == invalid));
-        assert_eq!(invalid.partial_cmp(&invalid), None);
+        assert!(invalid != other_invalid);
+        assert_eq!(invalid.partial_cmp(&other_invalid), None);
         assert_eq!(invalid.compare_to_wildcard_string("1.*"), None);
     }
 

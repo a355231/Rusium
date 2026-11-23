@@ -410,8 +410,11 @@ pub fn split_string_into_key_value_pairs(
     key_value_delimiter: char,
     key_value_pair_delimiter: char,
 ) -> KeyValueSplit<String> {
-    split_string_into_key_value_view_pairs(input, key_value_delimiter, key_value_pair_delimiter)
-        .pipe_owned()
+    to_owned_key_values(split_string_into_key_value_view_pairs(
+        input,
+        key_value_delimiter,
+        key_value_pair_delimiter,
+    ))
 }
 
 /// Borrowing version of [`split_string_into_key_value_pairs`]. Equivalent of
@@ -447,16 +450,10 @@ pub fn split_string_into_key_value_pairs_using_substr(
 /// Borrowing version of
 /// [`split_string_into_key_value_pairs_using_substr`]. Equivalent of
 /// `base::SplitStringIntoKeyValueViewPairsUsingSubstr`.
-pub fn split_string_into_key_value_view_pairs_using_substr(
-    input: &str,
+pub fn split_string_into_key_value_view_pairs_using_substr<'a>(
+    input: &'a str,
     key_value_delimiter: char,
     key_value_pair_delimiter: &str,
-) -> KeyValueSplit<&str> {
+) -> KeyValueSplit<&'a str> {
     split_key_value_views(input, key_value_delimiter, key_value_pair_delimiter)
-}
-
-impl<'a> KeyValueSplit<&'a str> {
-    fn pipe_owned(self) -> KeyValueSplit<String> {
-        to_owned_key_values(self)
-    }
 }
