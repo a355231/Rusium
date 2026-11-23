@@ -24,9 +24,7 @@ impl TimeDelta {
 
     /// Creates a delta of `seconds` seconds, saturating on overflow.
     pub const fn seconds(seconds: i64) -> TimeDelta {
-        TimeDelta {
-            micros: seconds.saturating_mul(MICROS_PER_SECOND),
-        }
+        TimeDelta { micros: seconds.saturating_mul(MICROS_PER_SECOND) }
     }
 
     /// Creates a delta from a raw microsecond count.
@@ -71,9 +69,7 @@ impl Sub for Time {
     type Output = TimeDelta;
 
     fn sub(self, rhs: Time) -> TimeDelta {
-        TimeDelta {
-            micros: self.micros.saturating_sub(rhs.micros),
-        }
+        TimeDelta { micros: self.micros.saturating_sub(rhs.micros) }
     }
 }
 
@@ -91,15 +87,8 @@ const MONTH_FULL_NAMES: [&[u8]; 12] = [
     b"november",
     b"december",
 ];
-const WEEKDAY_FULL_NAMES: [&[u8]; 7] = [
-    b"sunday",
-    b"monday",
-    b"tuesday",
-    b"wednesday",
-    b"thursday",
-    b"friday",
-    b"saturday",
-];
+const WEEKDAY_FULL_NAMES: [&[u8]; 7] =
+    [b"sunday", b"monday", b"tuesday", b"wednesday", b"thursday", b"friday", b"saturday"];
 
 /// Returns true if `year` is a Gregorian leap year.
 fn is_leap_year(year: i64) -> bool {
@@ -157,9 +146,7 @@ impl Time {
 
     /// Adds a delta, saturating on overflow.
     pub fn saturating_add(self, delta: TimeDelta) -> Time {
-        Time {
-            micros: self.micros.saturating_add(delta.micros),
-        }
+        Time { micros: self.micros.saturating_add(delta.micros) }
     }
 
     /// Builds a UTC time from broken-down fields. Returns `None` if any field
@@ -240,9 +227,8 @@ fn parse_date(text: &[u8]) -> Option<Time> {
     let mut time_of_day: Option<(u32, u32, u32)> = None;
     let mut pm: Option<bool> = None;
 
-    for token in text
-        .split(|&c| c.is_ascii_whitespace() || c == b',' || c == b'-')
-        .filter(|t| !t.is_empty())
+    for token in
+        text.split(|&c| c.is_ascii_whitespace() || c == b',' || c == b'-').filter(|t| !t.is_empty())
     {
         if token.contains(&b':') {
             if time_of_day.is_some() {
@@ -253,9 +239,7 @@ fn parse_date(text: &[u8]) -> Option<Time> {
             if token.len() > 9 {
                 return None;
             }
-            let value = token
-                .iter()
-                .fold(0i64, |acc, &c| acc * 10 + (c - b'0') as i64);
+            let value = token.iter().fold(0i64, |acc, &c| acc * 10 + (c - b'0') as i64);
             numbers.push((value, token.len()));
         } else if token.iter().all(u8::is_ascii_alphabetic) {
             let lower = token.to_ascii_lowercase();
@@ -268,9 +252,7 @@ fn parse_date(text: &[u8]) -> Option<Time> {
                 if month.is_some() {
                     return None;
                 }
-                let index = MONTH_FULL_NAMES
-                    .iter()
-                    .position(|full| full.starts_with(&lower))?;
+                let index = MONTH_FULL_NAMES.iter().position(|full| full.starts_with(&lower))?;
                 month = Some(index as u32 + 1);
             } else if matches_name(&lower, &WEEKDAY_FULL_NAMES) {
                 // Weekday names are accepted and ignored.
@@ -288,11 +270,8 @@ fn parse_date(text: &[u8]) -> Option<Time> {
     if numbers.len() != 2 {
         return None;
     }
-    let ((year, year_digits), (day, _)) = if numbers[0].1 >= 3 {
-        (numbers[0], numbers[1])
-    } else {
-        (numbers[1], numbers[0])
-    };
+    let ((year, year_digits), (day, _)) =
+        if numbers[0].1 >= 3 { (numbers[0], numbers[1]) } else { (numbers[1], numbers[0]) };
     let year = if year_digits <= 2 {
         if year < 50 {
             2000 + year

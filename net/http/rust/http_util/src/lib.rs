@@ -140,10 +140,7 @@ fn is_ascii_ws(c: u8) -> bool {
 
 fn trim_ascii_ws(s: &[u8]) -> &[u8] {
     let start = s.iter().position(|&c| !is_ascii_ws(c)).unwrap_or(s.len());
-    let end = s
-        .iter()
-        .rposition(|&c| !is_ascii_ws(c))
-        .map_or(start, |i| i + 1);
+    let end = s.iter().rposition(|&c| !is_ascii_ws(c)).map_or(start, |i| i + 1);
     &s[start..end.max(start)]
 }
 
@@ -211,9 +208,7 @@ fn parse_uint32_non_negative(s: &[u8]) -> Option<u32> {
     if s.is_empty() || !s.iter().all(u8::is_ascii_digit) {
         return None;
     }
-    s.iter().try_fold(0u32, |acc, &c| {
-        acc.checked_mul(10)?.checked_add((c - b'0') as u32)
-    })
+    s.iter().try_fold(0u32, |acc, &c| acc.checked_mul(10)?.checked_add((c - b'0') as u32))
 }
 
 /// A set of byte values, used for tokenizer delimiters.
@@ -256,14 +251,7 @@ struct Tokenizer<'a> {
 
 impl<'a> Tokenizer<'a> {
     fn new(input: &'a [u8], delims: &[u8], quote: Option<u8>, return_empty: bool) -> Self {
-        Tokenizer {
-            input,
-            delims: ByteSet::new(delims),
-            quote,
-            return_empty,
-            pos: 0,
-            done: false,
-        }
+        Tokenizer { input, delims: ByteSet::new(delims), quote, return_empty, pos: 0, done: false }
     }
 
     /// Returns the byte range of the next token within `input`.
@@ -315,12 +303,28 @@ impl<'a> Tokenizer<'a> {
 
 /// Returns true if `c` is a `tchar` (RFC 7230 section 3.2.6).
 pub fn is_token_char(c: u8) -> bool {
-    match c {
-        0..=0x20 | 0x7f..=0xff => false,
-        b'(' | b')' | b'<' | b'>' | b'@' | b',' | b';' | b':' | b'\\' | b'"' | b'/' | b'['
-        | b']' | b'?' | b'=' | b'{' | b'}' => false,
-        _ => true,
-    }
+    !matches!(
+        c,
+        0..=0x20
+            | 0x7f..=0xff
+            | b'('
+            | b')'
+            | b'<'
+            | b'>'
+            | b'@'
+            | b','
+            | b';'
+            | b':'
+            | b'\\'
+            | b'"'
+            | b'/'
+            | b'['
+            | b']'
+            | b'?'
+            | b'='
+            | b'{'
+            | b'}'
+    )
 }
 
 /// Returns true if `s` is a non-empty token (RFC 7230 section 3.2.6).
@@ -330,10 +334,7 @@ pub fn is_token(s: &[u8]) -> bool {
 
 /// Returns true if `s` is a valid `parmname` (RFC 5987 section 3.2.1).
 pub fn is_param_name(s: &[u8]) -> bool {
-    !s.is_empty()
-        && s
-            .iter()
-            .all(|&c| is_token_char(c) && c != b'*' && c != b'\'' && c != b'%')
+    !s.is_empty() && s.iter().all(|&c| is_token_char(c) && c != b'*' && c != b'\'' && c != b'%')
 }
 
 /// Returns true for a control character (CTL, RFC 5234 appendix B.1).
@@ -401,10 +402,7 @@ pub fn is_safe_header(name: &[u8], value: &[u8]) -> bool {
     if starts_with_ignore_case(name, b"proxy-") || starts_with_ignore_case(name, b"sec-") {
         return false;
     }
-    if FORBIDDEN_HEADER_FIELDS
-        .iter()
-        .any(|field| name.eq_ignore_ascii_case(field))
-    {
+    if FORBIDDEN_HEADER_FIELDS.iter().any(|field| name.eq_ignore_ascii_case(field)) {
         return false;
     }
     if FORBIDDEN_HEADER_FIELDS_WITH_FORBIDDEN_METHOD
@@ -414,10 +412,7 @@ pub fn is_safe_header(name: &[u8], value: &[u8]) -> bool {
         let mut methods = ValuesIterator::new(value, b',', true);
         while methods.get_next() {
             let method = methods.value();
-            if FORBIDDEN_METHODS
-                .iter()
-                .any(|forbidden| method.eq_ignore_ascii_case(forbidden))
-            {
+            if FORBIDDEN_METHODS.iter().any(|forbidden| method.eq_ignore_ascii_case(forbidden)) {
                 return false;
             }
         }
@@ -444,9 +439,7 @@ const NON_COALESCING_HEADERS: &[&[u8]] = &[
 /// Returns true for headers whose repeated values must not be joined with
 /// commas, because the values may themselves contain commas.
 pub fn is_non_coalescing_header(name: &[u8]) -> bool {
-    NON_COALESCING_HEADERS
-        .iter()
-        .any(|header| name.eq_ignore_ascii_case(header))
+    NON_COALESCING_HEADERS.iter().any(|header| name.eq_ignore_ascii_case(header))
 }
 
 /// Returns true if `value` has at least two different entries. Equivalent to
@@ -582,9 +575,7 @@ fn is_line_segment_continuable(line: &[u8]) -> bool {
 }
 
 fn remove_leading_non_lws(s: &[u8]) -> &[u8] {
-    s.iter()
-        .position(|&c| !is_lws(c))
-        .map_or(&[][..], |i| &s[i..])
+    s.iter().position(|&c| !is_lws(c)).map_or(&[][..], |i| &s[i..])
 }
 
 /// Turns raw response header bytes into the NUL-separated form used by
@@ -599,10 +590,8 @@ pub fn assemble_raw_headers(input: &[u8]) -> Vec<u8> {
         None => input,
     };
 
-    let status_line_end = input
-        .iter()
-        .position(|&c| c == b'\r' || c == b'\n')
-        .unwrap_or(input.len());
+    let status_line_end =
+        input.iter().position(|&c| c == b'\r' || c == b'\n').unwrap_or(input.len());
     let mut raw = Vec::with_capacity(input.len() + 2);
     raw.extend_from_slice(&input[..status_line_end]);
 
@@ -689,10 +678,7 @@ fn base_language_code(language: &[u8]) -> &[u8] {
 /// removed. 'x' and 'i' are not treated as primary subtags. Q values are not
 /// supported.
 pub fn expand_language_list(language_prefs: &[u8]) -> Vec<u8> {
-    let languages: Vec<&[u8]> = language_prefs
-        .split(|&c| c == b',')
-        .map(trim_ascii_ws)
-        .collect();
+    let languages: Vec<&[u8]> = language_prefs.split(|&c| c == b',').map(trim_ascii_ws).collect();
 
     let mut builder = AcceptLanguageBuilder::default();
     let size = languages.len();
@@ -834,10 +820,7 @@ fn mirror_pair(set: &mut BTreeSet<Vec<u8>>, a: &[u8], b: &[u8]) {
 /// Parses a `Content-Encoding` value into a lowercased set. Returns `None` if
 /// the value has quotes, '=', ';' or '*', or if an item contains LWS.
 pub fn parse_content_encoding(content_encoding: &[u8]) -> Option<BTreeSet<Vec<u8>>> {
-    if content_encoding
-        .iter()
-        .any(|&c| matches!(c, b'"' | b'=' | b';' | b'*'))
-    {
+    if content_encoding.iter().any(|&c| matches!(c, b'"' | b'=' | b';' | b'*')) {
         return None;
     }
     let mut used: BTreeSet<Vec<u8>> = BTreeSet::new();
@@ -871,9 +854,8 @@ pub fn parse_retry_after_header(retry_after: &[u8], now: Time) -> Option<TimeDel
 }
 
 const WEEKDAY_NAMES: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTH_NAMES: [&str; 12] = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
+const MONTH_NAMES: [&str; 12] =
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /// Formats `time` as an IMF-fixdate (RFC 7231 section 7.1.1.1), such as
 /// "Sat, 30 Apr 2011 22:42:07 GMT". Same output as the C++ version, which
@@ -998,8 +980,10 @@ pub fn parse_content_range_header_for_206(content_range_spec: &[u8]) -> Option<C
         return None;
     }
 
-    let minus_position = space_position + 1 + spec[space_position + 1..].iter().position(|&c| c == b'-')?;
-    let slash_position = minus_position + 1 + spec[minus_position + 1..].iter().position(|&c| c == b'/')?;
+    let minus_position =
+        space_position + 1 + spec[space_position + 1..].iter().position(|&c| c == b'-')?;
+    let slash_position =
+        minus_position + 1 + spec[minus_position + 1..].iter().position(|&c| c == b'/')?;
 
     let first_byte_position = string_to_int64(trim_lws(&spec[space_position + 1..minus_position]))?;
     if first_byte_position < 0 {
@@ -1013,11 +997,7 @@ pub fn parse_content_range_header_for_206(content_range_spec: &[u8]) -> Option<C
     if instance_length <= last_byte_position {
         return None;
     }
-    Some(ContentRange {
-        first_byte_position,
-        last_byte_position,
-        instance_length,
-    })
+    Some(ContentRange { first_byte_position, last_byte_position, instance_length })
 }
 
 /// Parses a `Range` header value of the form `bytes=spec,spec,...`. Returns
@@ -1033,7 +1013,8 @@ pub fn parse_range_header(ranges_specifier: &[u8]) -> Option<Vec<HttpByteRange>>
     }
 
     let mut ranges = Vec::new();
-    let mut byte_range_set = ValuesIterator::new(&ranges_specifier[equal_char_offset + 1..], b',', true);
+    let mut byte_range_set =
+        ValuesIterator::new(&ranges_specifier[equal_char_offset + 1..], b',', true);
     while byte_range_set.get_next() {
         let value = byte_range_set.value();
         let minus_char_offset = value.iter().position(|&c| c == b'-')?;
@@ -1041,11 +1022,8 @@ pub fn parse_range_header(ranges_specifier: &[u8]) -> Option<Vec<HttpByteRange>>
         let first_byte_pos = trim_lws(&value[..minus_char_offset]);
         let last_byte_pos = trim_lws(&value[minus_char_offset + 1..]);
 
-        let first = if first_byte_pos.is_empty() {
-            None
-        } else {
-            Some(string_to_int64(first_byte_pos)?)
-        };
+        let first =
+            if first_byte_pos.is_empty() { None } else { Some(string_to_int64(first_byte_pos)?) };
 
         let range = if !last_byte_pos.is_empty() {
             let last = string_to_int64(last_byte_pos)?;
@@ -1074,16 +1052,16 @@ pub fn parse_range_header(ranges_specifier: &[u8]) -> Option<Vec<HttpByteRange>>
 /// range without checking `is_valid()`. Values that overflow int64 saturate
 /// to `i64::MAX`. Spaces and tabs around '=' and '-' are accepted only when
 /// `allow_whitespace` is set. At least one side of the range needs digits.
-pub fn parse_fetch_single_range(range_header_value: &[u8], allow_whitespace: bool) -> Option<HttpByteRange> {
+pub fn parse_fetch_single_range(
+    range_header_value: &[u8],
+    allow_whitespace: bool,
+) -> Option<HttpByteRange> {
     const UNIT: &[u8] = b"bytes";
     if !range_header_value.starts_with(UNIT) {
         return None;
     }
-    let mut parser = FetchRangeParser {
-        input: range_header_value,
-        pos: UNIT.len(),
-        allow_whitespace,
-    };
+    let mut parser =
+        FetchRangeParser { input: range_header_value, pos: UNIT.len(), allow_whitespace };
 
     if !parser.consume_delimiter(b'=') {
         return None;
@@ -1150,10 +1128,7 @@ impl FetchRangeParser<'_> {
         }
         let mut value: i64 = 0;
         for &c in &self.input[start..self.pos] {
-            match value
-                .checked_mul(10)
-                .and_then(|v| v.checked_add((c - b'0') as i64))
-            {
+            match value.checked_mul(10).and_then(|v| v.checked_add((c - b'0') as i64)) {
                 Some(v) => value = v,
                 None => return Some(i64::MAX),
             }
@@ -1264,7 +1239,8 @@ impl<'a> HeadersIterator<'a> {
                 continue;
             }
 
-            let (name_begin, name_end) = trim_lws_range(self.headers, self.name_begin, self.name_end);
+            let (name_begin, name_end) =
+                trim_lws_range(self.headers, self.name_begin, self.name_end);
             self.name_begin = name_begin;
             self.name_end = name_end;
             if !is_token(&self.headers[name_begin..name_end]) {

@@ -46,9 +46,7 @@ fn some(s: &[u8]) -> Option<Vec<u8>> {
 
 /// Maps NUL bytes to '|' so expected strings can be written readably.
 fn pipes(v: &[u8]) -> String {
-    v.iter()
-        .map(|&c| if c == 0 { '|' } else { c as char })
-        .collect()
+    v.iter().map(|&c| if c == 0 { '|' } else { c as char }).collect()
 }
 
 /// Maps '|' to NUL, the inverse of `pipes` for test inputs.
@@ -90,22 +88,18 @@ fn reference_values(s: &[u8], ignore_empty: bool) -> Vec<Vec<u8>> {
 fn accept_encoding_repr(value: &str) -> String {
     match parse_accept_encoding(value.as_bytes()) {
         None => "INVALID".to_string(),
-        Some(set) => set
-            .iter()
-            .map(|e| String::from_utf8(e.clone()).unwrap())
-            .collect::<Vec<_>>()
-            .join("|"),
+        Some(set) => {
+            set.iter().map(|e| String::from_utf8(e.clone()).unwrap()).collect::<Vec<_>>().join("|")
+        }
     }
 }
 
 fn content_encoding_repr(value: &str) -> String {
     match parse_content_encoding(value.as_bytes()) {
         None => "INVALID".to_string(),
-        Some(set) => set
-            .iter()
-            .map(|e| String::from_utf8(e.clone()).unwrap())
-            .collect::<Vec<_>>()
-            .join("|"),
+        Some(set) => {
+            set.iter().map(|e| String::from_utf8(e.clone()).unwrap()).collect::<Vec<_>>().join("|")
+        }
     }
 }
 
@@ -127,7 +121,7 @@ fn date(year: i64, month: u32, day: u32, hour: u32, minute: u32, second: u32) ->
 // ---------------------------------------------------------------------------
 
 #[test]
-fn is_safe_header() {
+fn ported_is_safe_header() {
     let unsafe_headers: &[&str] = &[
         "sec-",
         "sEc-",
@@ -162,10 +156,7 @@ fn is_safe_header() {
     ];
     for header in unsafe_headers {
         assert!(!is_safe_header(header.as_bytes(), b""), "{header}");
-        assert!(
-            !is_safe_header(header.to_ascii_uppercase().as_bytes(), b""),
-            "{header}"
-        );
+        assert!(!is_safe_header(header.to_ascii_uppercase().as_bytes(), b""), "{header}");
     }
 
     let safe_headers: &[&str] = &[
@@ -215,10 +206,7 @@ fn is_safe_header() {
     ];
     for header in safe_headers {
         assert!(is_safe_header(header.as_bytes(), b""), "{header}");
-        assert!(
-            is_safe_header(header.to_ascii_uppercase().as_bytes(), b""),
-            "{header}"
-        );
+        assert!(is_safe_header(header.to_ascii_uppercase().as_bytes(), b""), "{header}");
     }
 
     let disallowed_with_forbidden_methods_headers: &[&str] =
@@ -250,7 +238,7 @@ fn is_safe_header() {
 }
 
 #[test]
-fn headers_iterator() {
+fn ported_headers_iterator() {
     let headers = b"foo: 1\t\r\nbar: hello world\r\nbaz: 3 \r\n";
     let mut it = HeadersIterator::new(headers, b"\r\n");
 
@@ -282,7 +270,7 @@ fn headers_iterator() {
 }
 
 #[test]
-fn headers_iterator_malformed_line() {
+fn ported_headers_iterator_malformed_line() {
     let headers = b"foo: 1\n: 2\n3\nbar: 4";
     let mut it = HeadersIterator::new(headers, b"\n");
 
@@ -306,14 +294,14 @@ fn headers_iterator_malformed_line() {
 }
 
 #[test]
-fn headers_iterator_malformed_name() {
+fn ported_headers_iterator_malformed_name() {
     let headers = b"[ignore me] /: 3\r\n";
     let mut it = HeadersIterator::new(headers, b"\r\n");
     assert!(!it.get_next());
 }
 
 #[test]
-fn headers_iterator_malformed_name_followed_by_valid_line() {
+fn ported_headers_iterator_malformed_name_followed_by_valid_line() {
     let headers = b"[ignore me] /: 3\r\nbar: 4\n";
     let mut it = HeadersIterator::new(headers, b"\r\n");
 
@@ -329,7 +317,7 @@ fn headers_iterator_malformed_name_followed_by_valid_line() {
 }
 
 #[test]
-fn values_iterator() {
+fn ported_values_iterator() {
     let values = b" must-revalidate,   no-cache=\"foo, bar\"\t, private ";
     let mut it = ValuesIterator::new(values, b',', true);
 
@@ -352,7 +340,7 @@ fn values_iterator() {
 }
 
 #[test]
-fn values_iterator_empty_values() {
+fn ported_values_iterator_empty_values() {
     let values = b", foopy , \t ,,,";
 
     let mut it = ValuesIterator::new(values, b',', true);
@@ -397,7 +385,7 @@ fn values_iterator_empty_values() {
 }
 
 #[test]
-fn values_iterator_blanks() {
+fn ported_values_iterator_blanks() {
     let values = b" \t ";
 
     let mut it = ValuesIterator::new(values, b',', true);
@@ -412,7 +400,7 @@ fn values_iterator_blanks() {
 }
 
 #[test]
-fn unquote() {
+fn ported_unquote() {
     // Replace <backslash> " with ".
     assert_eq!(super::unquote(b"\"xyz\\\"abc\""), b"xyz\"abc");
 
@@ -435,16 +423,13 @@ fn unquote() {
 }
 
 #[test]
-fn strict_unquote() {
+fn ported_strict_unquote() {
     // Replace <backslash> " with ".
     assert_eq!(strict_unquote(b"\"xyz\\\"abc\""), some(b"xyz\"abc"));
 
     // Replace <backslash> <backslash> with <backslash>.
     assert_eq!(strict_unquote(b"\"xyz\\\\abc\""), some(b"xyz\\abc"));
-    assert_eq!(
-        strict_unquote(b"\"xyz\\\\\\\\\\\\abc\""),
-        some(b"xyz\\\\\\abc")
-    );
+    assert_eq!(strict_unquote(b"\"xyz\\\\\\\\\\\\abc\""), some(b"xyz\\\\\\abc"));
 
     // Replace <backslash> X with X.
     assert_eq!(strict_unquote(b"\"xyz\\Xabc\""), some(b"xyzXabc"));
@@ -475,7 +460,7 @@ fn strict_unquote() {
 }
 
 #[test]
-fn quote() {
+fn ported_quote() {
     assert_eq!(super::quote(b"xyz\"abc"), b"\"xyz\\\"abc\"");
 
     // Replace <backslash> <backslash> with <backslash>.
@@ -486,7 +471,7 @@ fn quote() {
 }
 
 #[test]
-fn locate_end_of_headers() {
+fn ported_locate_end_of_headers() {
     let tests: &[(&str, Option<usize>)] = &[
         ("\r\n", None),
         ("\n", None),
@@ -501,16 +486,12 @@ fn locate_end_of_headers() {
         ("foo\nbar\r\n\njunk", Some(10)),
     ];
     for (input, expected) in tests {
-        assert_eq!(
-            super::locate_end_of_headers(input.as_bytes(), 0),
-            *expected,
-            "{input:?}"
-        );
+        assert_eq!(super::locate_end_of_headers(input.as_bytes(), 0), *expected, "{input:?}");
     }
 }
 
 #[test]
-fn locate_end_of_additional_headers() {
+fn ported_locate_end_of_additional_headers() {
     let tests: &[(&str, Option<usize>)] = &[
         ("\r\n", Some(2)),
         ("\n", Some(1)),
@@ -534,7 +515,7 @@ fn locate_end_of_additional_headers() {
 }
 
 #[test]
-fn locate_start_of_status_line() {
+fn ported_locate_start_of_status_line() {
     assert_eq!(locate_start_of_status_line(b"HTTP"), Some(0));
     assert_eq!(locate_start_of_status_line(b"HTTP/1.1 200 OK"), Some(0));
     assert_eq!(locate_start_of_status_line(b"xxxxHTTP/1.1 200 OK"), Some(4));
@@ -543,17 +524,11 @@ fn locate_start_of_status_line() {
 }
 
 #[test]
-fn assemble_raw_headers() {
+fn ported_assemble_raw_headers() {
     // Inputs use '|' for NUL, and expected outputs use '|' for NUL.
     let tests: &[(&str, &str)] = &[
-        (
-            "HTTP/1.0 200 OK\r\nFoo: 1\r\nBar: 2\r\n\r\n",
-            "HTTP/1.0 200 OK|Foo: 1|Bar: 2||",
-        ),
-        (
-            "HTTP/1.0 200 OK\nFoo: 1\nBar: 2\n\n",
-            "HTTP/1.0 200 OK|Foo: 1|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\r\nFoo: 1\r\nBar: 2\r\n\r\n", "HTTP/1.0 200 OK|Foo: 1|Bar: 2||"),
+        ("HTTP/1.0 200 OK\nFoo: 1\nBar: 2\n\n", "HTTP/1.0 200 OK|Foo: 1|Bar: 2||"),
         // Valid line continuation (single SP).
         (
             "HTTP/1.0 200 OK\nFoo: 1\n continuation\nBar: 2\n\n",
@@ -600,32 +575,17 @@ fn assemble_raw_headers() {
             "HTTP/1.0 200 OK|Foo: 1   |Bar: 2||",
         ),
         // Valid line continuation with no value bytes on the first line.
-        (
-            "HTTP/1.0 200 OK\nFoo:\n value\nBar: 2\n\n",
-            "HTTP/1.0 200 OK|Foo: value|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\nFoo:\n value\nBar: 2\n\n", "HTTP/1.0 200 OK|Foo: value|Bar: 2||"),
         // Not a line continuation: can't continue the status line.
-        (
-            "HTTP/1.0 200 OK\n Foo: 1\nBar: 2\n\n",
-            "HTTP/1.0 200 OK| Foo: 1|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\n Foo: 1\nBar: 2\n\n", "HTTP/1.0 200 OK| Foo: 1|Bar: 2||"),
         // Not a line continuation: can't continue the status line.
-        (
-            "HTTP/1.0\n 200 OK\nFoo: 1\nBar: 2\n\n",
-            "HTTP/1.0| 200 OK|Foo: 1|Bar: 2||",
-        ),
+        ("HTTP/1.0\n 200 OK\nFoo: 1\nBar: 2\n\n", "HTTP/1.0| 200 OK|Foo: 1|Bar: 2||"),
         // Not a line continuation: can't continue the status line.
-        (
-            "HTTP/1.0 404\n Not Found\nFoo: 1\nBar: 2\n\n",
-            "HTTP/1.0 404| Not Found|Foo: 1|Bar: 2||",
-        ),
+        ("HTTP/1.0 404\n Not Found\nFoo: 1\nBar: 2\n\n", "HTTP/1.0 404| Not Found|Foo: 1|Bar: 2||"),
         // Unterminated status line.
         ("HTTP/1.0 200 OK", "HTTP/1.0 200 OK||"),
         // Single terminated, with headers.
-        (
-            "HTTP/1.0 200 OK\nFoo: 1\nBar: 2\n",
-            "HTTP/1.0 200 OK|Foo: 1|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\nFoo: 1\nBar: 2\n", "HTTP/1.0 200 OK|Foo: 1|Bar: 2||"),
         // Not terminated, with headers.
         ("HTTP/1.0 200 OK\nFoo: 1\nBar: 2", "HTTP/1.0 200 OK|Foo: 1|Bar: 2||"),
         // Not a line continuation (VT).
@@ -649,10 +609,7 @@ fn assemble_raw_headers() {
             "HTTP/1.0 200 OK|Foo: 1|garbage|  not-a-continuation|Bar: 2||",
         ),
         // Not a line continuation: no valid name.
-        (
-            "HTTP/1.0 200 OK\n: 1\n  garbage\nBar: 2\n\n",
-            "HTTP/1.0 200 OK|: 1|  garbage|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\n: 1\n  garbage\nBar: 2\n\n", "HTTP/1.0 200 OK|: 1|  garbage|Bar: 2||"),
         // Not a line continuation: no valid name (whitespace).
         (
             "HTTP/1.0 200 OK\n   : 1\n  garbage\nBar: 2\n\n",
@@ -664,10 +621,7 @@ fn assemble_raw_headers() {
             "HTTP/1.0 200 OKBar2:0Baz2:1|Foo: 1|Bar: 2||",
         ),
         // Embedded NULs in a header line are not line separators.
-        (
-            "HTTP/1.0 200 OK\nFoo: 1|Foo2: 3\nBar: 2\n\n",
-            "HTTP/1.0 200 OK|Foo: 1Foo2: 3|Bar: 2||",
-        ),
+        ("HTTP/1.0 200 OK\nFoo: 1|Foo2: 3\nBar: 2\n\n", "HTTP/1.0 200 OK|Foo: 1Foo2: 3|Bar: 2||"),
         // A NUL at the start of a line is not LWS, so it is not a continuation.
         (
             "HTTP/1.0 200 OK\nFoo: 1\n|Blah: 3\nBar: 2\n\n",
@@ -683,13 +637,10 @@ fn assemble_raw_headers() {
 }
 
 #[test]
-fn generate_accept_language_header() {
+fn ported_generate_accept_language_header() {
     assert!(generate_accept_language_header(b"").is_empty());
     assert_eq!(generate_accept_language_header(b"es"), b"es");
-    assert_eq!(
-        generate_accept_language_header(b"en-US,fr,de"),
-        b"en-US,fr;q=0.9,de;q=0.8"
-    );
+    assert_eq!(generate_accept_language_header(b"en-US,fr,de"), b"en-US,fr;q=0.9,de;q=0.8");
     assert_eq!(
         generate_accept_language_header(b"en-US,fr,de,ko,zh-CN,ja"),
         b"en-US,fr;q=0.9,de;q=0.8,ko;q=0.7,zh-CN;q=0.6,ja;q=0.5"
@@ -701,7 +652,7 @@ fn generate_accept_language_header() {
 }
 
 #[test]
-fn parse_content_type() {
+fn ported_parse_content_type() {
     // (content_type, mime_type, charset, had_charset, boundary)
     let tests: &[(&str, &str, &str, bool, &str)] = &[
         ("text/html", "text/html", "", false, ""),
@@ -719,13 +670,7 @@ fn parse_content_type() {
             "WebKit-ada-df-dsf-adsfadsfs",
         ),
         // The parameter name is "boundary ", not "boundary". See crbug.com/772834.
-        (
-            "text/html; boundary =\"WebKit-ada-df-dsf-adsfadsfs\"",
-            "text/html",
-            "",
-            false,
-            "",
-        ),
+        ("text/html; boundary =\"WebKit-ada-df-dsf-adsfadsfs\"", "text/html", "", false, ""),
         // The parameter value includes a leading space. See crbug.com/772834.
         (
             "text/html; boundary= \"WebKit-ada-df-dsf-adsfadsfs\"",
@@ -807,7 +752,7 @@ fn parse_content_type() {
 }
 
 #[test]
-fn parse_content_reset_charset() {
+fn ported_parse_content_reset_charset() {
     let mut state = ContentType::default();
 
     // Set the MIME type (case is ignored) but not the charset.
@@ -836,7 +781,7 @@ fn parse_content_reset_charset() {
 }
 
 #[test]
-fn parse_content_range_header() {
+fn ported_parse_content_range_header() {
     // (spec, expected_return_value, first, last, instance_length)
     let tests: &[(&str, bool, i64, i64, i64)] = &[
         ("", false, -1, -1, -1),
@@ -880,16 +825,12 @@ fn parse_content_range_header() {
             last_byte_position: *last,
             instance_length: *length,
         });
-        assert_eq!(
-            parse_content_range_header_for_206(spec.as_bytes()),
-            expected,
-            "{spec:?}"
-        );
+        assert_eq!(parse_content_range_header_for_206(spec.as_bytes()), expected, "{spec:?}");
     }
 }
 
 #[test]
-fn parse_range_header() {
+fn ported_parse_range_header() {
     let ranges = super::parse_range_header(b"bytes=0-99").expect("valid");
     assert_eq!(ranges.len(), 1);
     assert_eq!(ranges[0].first_byte_position(), Some(0));
@@ -912,7 +853,7 @@ fn parse_range_header() {
 /// Invalid Fetch single-range values must fail, including malformed syntax,
 /// unsupported formats, missing digits, reverse ranges, and out-of-range values.
 #[test]
-fn parse_fetch_single_range_rejects_invalid() {
+fn ported_parse_fetch_single_range_rejects_invalid() {
     let cases: &[&[u8]] = &[
         b"",
         b"byte=0-",
@@ -951,7 +892,7 @@ fn parse_fetch_single_range_rejects_invalid() {
 /// Syntactically valid but semantically invalid ranges parse. Callers must
 /// check `is_valid()`.
 #[test]
-fn parse_fetch_single_range_parses_semantic_invalid() {
+fn ported_parse_fetch_single_range_parses_semantic_invalid() {
     // "bytes=-0" is a zero-length suffix range. It parses, but is invalid.
     let range = parse_fetch_single_range(b"bytes=-0", true).expect("parses");
     assert!(range.is_suffix_byte_range());
@@ -971,12 +912,9 @@ fn parse_fetch_single_range_parses_semantic_invalid() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_normal() {
-    let cases: &[(&[u8], i64, i64)] = &[
-        (b"bytes=5-10", 5, 10),
-        (b"bytes=00005-00010", 5, 10),
-        (b"bytes=0-0", 0, 0),
-    ];
+fn ported_parse_fetch_single_range_accepts_normal() {
+    let cases: &[(&[u8], i64, i64)] =
+        &[(b"bytes=5-10", 5, 10), (b"bytes=00005-00010", 5, 10), (b"bytes=0-0", 0, 0)];
     for (value, first, last) in cases {
         let range = parse_fetch_single_range(value, true).expect("parses");
         assert!(!range.is_suffix_byte_range());
@@ -986,9 +924,9 @@ fn parse_fetch_single_range_accepts_normal() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_suffix() {
+fn ported_parse_fetch_single_range_accepts_suffix() {
     // The second case has whitespace after '-', which Fetch allows.
-    for value in [&b"bytes=-5"[..], b"bytes=-\t 5"] {
+    for value in [&b"bytes=-5"[..], &b"bytes=-\t 5"[..]] {
         let range = parse_fetch_single_range(value, true).expect("parses");
         assert!(range.is_suffix_byte_range());
         assert_eq!(range.suffix_length(), Some(5));
@@ -996,9 +934,9 @@ fn parse_fetch_single_range_accepts_suffix() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_open_ended() {
+fn ported_parse_fetch_single_range_accepts_open_ended() {
     // The later cases have whitespace around '=' and '-', which Fetch allows.
-    for value in [&b"bytes=5-"[..], b"bytes= 5 - ", b"bytes \t =\t 5-"] {
+    for value in [&b"bytes=5-"[..], &b"bytes= 5 - "[..], &b"bytes \t =\t 5-"[..]] {
         let range = parse_fetch_single_range(value, true).expect("parses");
         assert!(!range.is_suffix_byte_range());
         assert_eq!(range.first_byte_position(), Some(5));
@@ -1007,14 +945,9 @@ fn parse_fetch_single_range_accepts_open_ended() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_whitespace_when_allowed() {
-    let cases: &[&[u8]] = &[
-        b"bytes =5-10",
-        b"bytes= 5-10",
-        b"bytes=5 -10",
-        b"bytes=5- 10",
-        b"bytes=5\t-\t10",
-    ];
+fn ported_parse_fetch_single_range_accepts_whitespace_when_allowed() {
+    let cases: &[&[u8]] =
+        &[b"bytes =5-10", b"bytes= 5-10", b"bytes=5 -10", b"bytes=5- 10", b"bytes=5\t-\t10"];
     for value in cases {
         let range = parse_fetch_single_range(value, true).expect("parses");
         assert_eq!(range.first_byte_position(), Some(5));
@@ -1028,7 +961,7 @@ fn parse_fetch_single_range_accepts_whitespace_when_allowed() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_boundary_values() {
+fn ported_parse_fetch_single_range_accepts_boundary_values() {
     // "bytes=0-" is an open-ended range that starts at byte 0.
     let open_ended = parse_fetch_single_range(b"bytes=0-", true).expect("parses");
     assert!(!open_ended.is_suffix_byte_range());
@@ -1042,7 +975,7 @@ fn parse_fetch_single_range_accepts_boundary_values() {
 }
 
 #[test]
-fn parse_fetch_single_range_accepts_valid_ranges_in_strict_mode() {
+fn ported_parse_fetch_single_range_accepts_valid_ranges_in_strict_mode() {
     let cases: &[&[u8]] = &[b"bytes=5-10", b"bytes=5-", b"bytes=-5"];
     for value in cases {
         assert!(parse_fetch_single_range(value, false).is_some());
@@ -1051,7 +984,7 @@ fn parse_fetch_single_range_accepts_valid_ranges_in_strict_mode() {
 
 /// Overflowing values saturate to i64::MAX instead of being rejected.
 #[test]
-fn parse_fetch_single_range_saturates_overflow() {
+fn ported_parse_fetch_single_range_saturates_overflow() {
     let max = i64::MAX;
 
     // Overflowing end with a valid start: bounded range [5, max].
@@ -1061,7 +994,8 @@ fn parse_fetch_single_range_saturates_overflow() {
     assert_eq!(bounded.last_byte_position(), Some(max));
 
     // Overflowing start, open-ended: range [max, ).
-    let open_ended = parse_fetch_single_range(b"bytes=999999999999999999999-", true).expect("parses");
+    let open_ended =
+        parse_fetch_single_range(b"bytes=999999999999999999999-", true).expect("parses");
     assert!(!open_ended.is_suffix_byte_range());
     assert_eq!(open_ended.first_byte_position(), Some(max));
     assert!(!open_ended.has_last_byte_position());
@@ -1073,9 +1007,12 @@ fn parse_fetch_single_range_saturates_overflow() {
 }
 
 #[test]
-fn parse_retry_after_header() {
-    let now = date(2014, 11, 4, 5, 22, 39);
-    let later = date(2015, 1, 5, 1, 12, 34);
+fn ported_parse_retry_after_header() {
+    // The C++ test uses positional Exploded initializers:
+    // {2014, 11, 4, 5, 22, 39, 30, 0} is 2014-11-05 22:39:30, and
+    // {2015, 1, 5, 1, 12, 34, 56, 0} is 2015-01-01 12:34:56.
+    let now = date(2014, 11, 5, 22, 39, 30);
+    let later = date(2015, 1, 1, 12, 34, 56);
     // Each case: (value, expected seconds or None).
     let tests: Vec<(&str, Option<TimeDelta>)> = vec![
         ("", None),
@@ -1104,7 +1041,7 @@ fn parse_retry_after_header() {
 }
 
 #[test]
-fn time_format_http() {
+fn ported_time_format_http() {
     let exploded = Exploded {
         year: 2011,
         month: 4,
@@ -1120,7 +1057,7 @@ fn time_format_http() {
 }
 
 #[test]
-fn name_value_pairs_iterator_copy_and_assign() {
+fn ported_name_value_pairs_iterator_copy_and_assign() {
     let data = "alpha=\"\\\"a\\\"\"; beta=\" b \"; cappa=\"c;\"; delta=\"d\"";
     let mut parser_a = NameValuePairsIterator::new(data.as_bytes(), b';');
 
@@ -1147,14 +1084,14 @@ fn name_value_pairs_iterator_copy_and_assign() {
 }
 
 #[test]
-fn name_value_pairs_iterator_empty_input() {
+fn ported_name_value_pairs_iterator_empty_input() {
     let mut parser = NameValuePairsIterator::new(b"", b';');
     assert!(parser.valid());
     check_next(&mut parser, false, true, "", "");
 }
 
 #[test]
-fn name_value_pairs_iterator() {
+fn ported_name_value_pairs_iterator() {
     let data = "alpha=1; beta= 2 ;\
         cappa =' 3; foo=';\
         cappa =\" 3; foo=\";\
@@ -1184,7 +1121,7 @@ fn name_value_pairs_iterator() {
 }
 
 #[test]
-fn name_value_pairs_iterator_optional_values() {
+fn ported_name_value_pairs_iterator_optional_values() {
     let data = "alpha=1; beta;cappa ;  delta; e    ; f=1";
 
     // The default parser requires values.
@@ -1222,7 +1159,7 @@ fn name_value_pairs_iterator_optional_values() {
 }
 
 #[test]
-fn name_value_pairs_iterator_illegal_inputs() {
+fn ported_name_value_pairs_iterator_illegal_inputs() {
     check_invalid_name_value_pair("alpha=1", "; beta");
     check_invalid_name_value_pair("", "beta");
 
@@ -1237,7 +1174,7 @@ fn name_value_pairs_iterator_illegal_inputs() {
 
 /// Extra separators are accepted and handled sensibly.
 #[test]
-fn name_value_pairs_iterator_extra_separators() {
+fn ported_name_value_pairs_iterator_extra_separators() {
     let data = " ; ;;alpha=1; ;; ; beta= 2;cappa=3;;; ; ";
     let mut parser = NameValuePairsIterator::new(data.as_bytes(), b';');
     assert!(parser.valid());
@@ -1251,7 +1188,7 @@ fn name_value_pairs_iterator_extra_separators() {
 /// A missing closing quote is tolerated. See the comments on
 /// `NameValuePairsIterator::get_next` for why this differs from the spec.
 #[test]
-fn name_value_pairs_iterator_missing_end_quote() {
+fn ported_name_value_pairs_iterator_missing_end_quote() {
     let mut parser = NameValuePairsIterator::new(b"name=\"value", b';');
     assert!(parser.valid());
 
@@ -1260,7 +1197,7 @@ fn name_value_pairs_iterator_missing_end_quote() {
 }
 
 #[test]
-fn name_value_pairs_iterator_strict_quotes_escaped_end_quote() {
+fn ported_name_value_pairs_iterator_strict_quotes_escaped_end_quote() {
     let mut parser = NameValuePairsIterator::with_options(
         b"foo=bar; name=\"value\\\"",
         b';',
@@ -1274,7 +1211,7 @@ fn name_value_pairs_iterator_strict_quotes_escaped_end_quote() {
 }
 
 #[test]
-fn name_value_pairs_iterator_strict_quotes_quote_in_value() {
+fn ported_name_value_pairs_iterator_strict_quotes_quote_in_value() {
     let mut parser = NameValuePairsIterator::with_options(
         b"foo=\"bar\"; name=\"va\"lue\"",
         b';',
@@ -1288,7 +1225,7 @@ fn name_value_pairs_iterator_strict_quotes_quote_in_value() {
 }
 
 #[test]
-fn name_value_pairs_iterator_strict_quotes_missing_end_quote() {
+fn ported_name_value_pairs_iterator_strict_quotes_missing_end_quote() {
     let mut parser = NameValuePairsIterator::with_options(
         b"foo=\"bar\"; name=\"value",
         b';',
@@ -1302,7 +1239,7 @@ fn name_value_pairs_iterator_strict_quotes_missing_end_quote() {
 }
 
 #[test]
-fn name_value_pairs_iterator_strict_quotes_single_quotes() {
+fn ported_name_value_pairs_iterator_strict_quotes_single_quotes() {
     let mut parser = NameValuePairsIterator::with_options(
         b"foo=\"bar\"; name='value; ok=it'",
         b';',
@@ -1385,7 +1322,7 @@ fn check_invalid_name_value_pair(valid_part: &str, invalid_part: &str) {
 }
 
 #[test]
-fn has_validators() {
+fn ported_has_validators() {
     // An empty header value is passed as Some(""), as in the C++ test.
     let missing = Some(&b""[..]);
     let etag_empty = Some(&b"\"\""[..]);
@@ -1444,7 +1381,7 @@ fn has_validators() {
 }
 
 #[test]
-fn has_strong_validators() {
+fn ported_has_strong_validators() {
     let v1_1 = HttpVersion::new(1, 1);
     let weak_etag = Some(&b"W/\"weak\""[..]);
     let strong_etag = Some(&b"\"strong\""[..]);
@@ -1459,7 +1396,7 @@ fn has_strong_validators() {
 }
 
 #[test]
-fn is_valid_header_value() {
+fn ported_is_valid_header_value() {
     let invalid_values: &[&[u8]] = &[
         b"X-Requested-With: chrome\0Sec-Unsafe: injected",
         b"X-Requested-With: chrome\r\nSec-Unsafe: injected",
@@ -1479,7 +1416,7 @@ fn is_valid_header_value() {
 }
 
 #[test]
-fn is_token_char() {
+fn ported_is_token_char() {
     for i in 0..256u32 {
         let c = i as u8;
         let expected = !(i >= 0x7f
@@ -1506,7 +1443,7 @@ fn is_token_char() {
 }
 
 #[test]
-fn is_token() {
+fn ported_is_token() {
     assert!(super::is_token(b"valid"));
     assert!(super::is_token(b"!"));
     assert!(super::is_token(b"~"));
@@ -1522,7 +1459,7 @@ fn is_token() {
 }
 
 #[test]
-fn is_param_name() {
+fn ported_is_param_name() {
     assert!(super::is_param_name(b"filename"));
     assert!(super::is_param_name(b"filename.ext"));
 
@@ -1534,7 +1471,7 @@ fn is_param_name() {
 }
 
 #[test]
-fn is_lws() {
+fn ported_is_lws() {
     assert!(!super::is_lws(b'\x0b'));
     assert!(!super::is_lws(b'\0'));
     assert!(!super::is_lws(b'1'));
@@ -1548,37 +1485,36 @@ fn is_lws() {
 }
 
 #[test]
-fn trim_lws() {
+fn ported_trim_lws() {
     // (input, begin, end, expected_begin, expected_end)
-    let cases: &[(&str, usize, usize, usize, usize)] = &[
-        ("", 0, 0, 0, 0),
-        (" a ", 0, 3, 1, 2),
-        ("\ta\t", 0, 3, 1, 2),
-        (" a ", 1, 2, 1, 2),
-        (" a ", 1, 3, 1, 2),
-        (" a ", 0, 2, 1, 2),
-        (" a ", 0, 1, 1, 1),
-        (" a ", 2, 3, 3, 3),
-        (" \x01z\u{ff} ", 0, 5, 1, 4),
-        (" a b ", 0, 5, 1, 4),
-        ("\ra\n", 0, 3, 0, 3),
-        (" \t a \t b\t \t", 0, 11, 3, 8),
+    let cases: &[(&[u8], usize, usize, usize, usize)] = &[
+        (b"", 0, 0, 0, 0),
+        (b" a ", 0, 3, 1, 2),
+        (b"\ta\t", 0, 3, 1, 2),
+        (b" a ", 1, 2, 1, 2),
+        (b" a ", 1, 3, 1, 2),
+        (b" a ", 0, 2, 1, 2),
+        (b" a ", 0, 1, 1, 1),
+        (b" a ", 2, 3, 3, 3),
+        (b" \x01z\xff ", 0, 5, 1, 4),
+        (b" a b ", 0, 5, 1, 4),
+        (b"\ra\n", 0, 3, 0, 3),
+        (b" \t a \t b\t \t", 0, 11, 3, 8),
     ];
     for (input, begin, end, expected_begin, expected_end) in cases {
-        let bytes = input.as_bytes();
         assert_eq!(
-            trim_lws_range(bytes, *begin, *end),
+            trim_lws_range(input, *begin, *end),
             (*expected_begin, *expected_end),
             "{input:?}"
         );
         // The slice overload trims the same way.
-        let slice = &bytes[*begin..*end];
-        assert_eq!(trim_lws(slice), &bytes[*expected_begin..*expected_end], "{input:?}");
+        let slice = &input[*begin..*end];
+        assert_eq!(trim_lws(slice), &input[*expected_begin..*expected_end], "{input:?}");
     }
 }
 
 #[test]
-fn is_control_char() {
+fn ported_is_control_char() {
     assert!(!super::is_control_char(b'1'));
     assert!(!super::is_control_char(b'a'));
     assert!(!super::is_control_char(b'.'));
@@ -1597,7 +1533,7 @@ fn is_control_char() {
 }
 
 #[test]
-fn parse_accept_encoding() {
+fn ported_parse_accept_encoding() {
     let tests: &[(&str, &str)] = &[
         ("", "*"),
         ("identity;q=1, *;q=0", "identity"),
@@ -1632,7 +1568,7 @@ fn parse_accept_encoding() {
 }
 
 #[test]
-fn parse_content_encoding() {
+fn ported_parse_content_encoding() {
     let tests: &[(&str, &str)] = &[
         ("", ""),
         ("identity;q=1, *;q=0", "INVALID"),
@@ -1647,7 +1583,7 @@ fn parse_content_encoding() {
 }
 
 #[test]
-fn expand_language_list() {
+fn ported_expand_language_list() {
     let expand = |s: &str| String::from_utf8(super::expand_language_list(s.as_bytes())).unwrap();
     assert_eq!(expand(""), "");
     assert_eq!(expand("en-US"), "en-US,en");
@@ -1662,10 +1598,7 @@ fn expand_language_list() {
     assert_eq!(expand("en-US,en-CA,fr-CA"), "en-US,en-CA,en,fr-CA,fr");
 
     // A base language is added even if it is already in the list.
-    assert_eq!(
-        expand("en-US,fr-CA,it,fr,es-AR,it-IT"),
-        "en-US,en,fr-CA,fr,it,es-AR,es,it-IT"
-    );
+    assert_eq!(expand("en-US,fr-CA,it,fr,es-AR,it-IT"), "en-US,en,fr-CA,fr,it,es-AR,es,it-IT");
     // Whitespace is trimmed.
     assert_eq!(expand("en-US, fr"), "en-US,en,fr");
 
@@ -1675,7 +1608,7 @@ fn expand_language_list() {
 }
 
 #[test]
-fn status_codes_for_histogram() {
+fn ported_status_codes_for_histogram() {
     let codes = status_codes_for_histogram();
     assert_eq!(codes.len(), 501);
     assert_eq!(codes[0], 0);
@@ -1723,14 +1656,8 @@ fn trim_lws_matches_reference_on_random_input() {
     for _ in 0..5_000 {
         let input = rng.bytes_from(alphabet, 12);
         let expected: &[u8] = {
-            let s = input
-                .iter()
-                .position(|&c| c != b' ' && c != b'\t')
-                .unwrap_or(input.len());
-            let e = input
-                .iter()
-                .rposition(|&c| c != b' ' && c != b'\t')
-                .map_or(s, |i| i + 1);
+            let s = input.iter().position(|&c| c != b' ' && c != b'\t').unwrap_or(input.len());
+            let e = input.iter().rposition(|&c| c != b' ' && c != b'\t').map_or(s, |i| i + 1);
             &input[s..e.max(s)]
         };
         assert_eq!(trim_lws(&input), expected);
@@ -1835,11 +1762,7 @@ fn range_header_round_trips_random_lists() {
             }
         }
         let header = format!("bytes={}", parts.join(", "));
-        assert_eq!(
-            parse_range_header(header.as_bytes()),
-            Some(expected),
-            "{header}"
-        );
+        assert_eq!(parse_range_header(header.as_bytes()), Some(expected), "{header}");
     }
 }
 
@@ -1875,10 +1798,7 @@ fn time_format_round_trips_random_times() {
 #[test]
 fn time_format_known_weekdays() {
     // 1970-01-01 was a Thursday.
-    assert_eq!(
-        super::time_format_http(Time::UNIX_EPOCH),
-        "Thu, 01 Jan 1970 00:00:00 GMT"
-    );
+    assert_eq!(super::time_format_http(Time::UNIX_EPOCH), "Thu, 01 Jan 1970 00:00:00 GMT");
     // The leap day of 2024 was a Thursday.
     assert_eq!(
         super::time_format_http(date(2024, 2, 29, 12, 0, 0)),
@@ -1889,10 +1809,7 @@ fn time_format_known_weekdays() {
 #[test]
 fn date_parser_accepts_rfc850_and_asctime() {
     let expected = date(1994, 11, 6, 8, 49, 37);
-    assert_eq!(
-        Time::from_utc_string(b"Sunday, 06-Nov-94 08:49:37 GMT"),
-        Some(expected)
-    );
+    assert_eq!(Time::from_utc_string(b"Sunday, 06-Nov-94 08:49:37 GMT"), Some(expected));
     assert_eq!(Time::from_utc_string(b"Sun Nov  6 08:49:37 1994"), Some(expected));
     assert_eq!(Time::from_utc_string(b"Sun, 06 Nov 1994 08:49:37 GMT"), Some(expected));
     assert_eq!(Time::from_utc_string(b"Sun, 31 Feb 1994 08:49:37 GMT"), None);
@@ -1926,6 +1843,7 @@ fn parsers_do_not_panic_on_random_bytes() {
     let now = date(2014, 11, 4, 5, 22, 39);
     for _ in 0..20_000 {
         let input = rng.bytes_from(alphabet, 40);
+        let s = input.as_slice();
         let _ = parse_fetch_single_range(&input, true);
         let _ = parse_fetch_single_range(&input, false);
         let _ = parse_range_header(&input);
@@ -1942,8 +1860,8 @@ fn parsers_do_not_panic_on_random_bytes() {
         let _ = locate_end_of_additional_headers(&input, 0);
         let _ = expand_language_list(&input);
         let _ = generate_accept_language_header(&input);
-        let _ = has_strong_validators(HttpVersion::new(1, 1), Some(&input), Some(&input), Some(&input));
-        let _ = has_validators(HttpVersion::new(1, 1), Some(&input), Some(&input));
+        let _ = has_strong_validators(HttpVersion::new(1, 1), Some(s), Some(s), Some(s));
+        let _ = has_validators(HttpVersion::new(1, 1), Some(s), Some(s));
         let _ = is_safe_header(&input, &input);
         let _ = is_valid_header_value(&input);
         let _ = is_token(&input);
@@ -1959,12 +1877,8 @@ fn parsers_do_not_panic_on_random_bytes() {
             let _ = values.value();
         }
 
-        let mut pairs = NameValuePairsIterator::with_options(
-            &input,
-            b';',
-            Values::NotRequired,
-            Quotes::Strict,
-        );
+        let mut pairs =
+            NameValuePairsIterator::with_options(&input, b';', Values::NotRequired, Quotes::Strict);
         while pairs.get_next() {
             let _ = pairs.value();
         }
@@ -1987,7 +1901,8 @@ fn assemble_raw_headers_output_has_only_nul_separators() {
 #[test]
 fn generate_accept_language_header_has_descending_q_values() {
     let mut rng = Rng::new(41);
-    let tags: &[&str] = &["en", "fr", "de", "ko", "zh-CN", "ja", "es", "it", "pt", "nl", "sv", "ru"];
+    let tags: &[&str] =
+        &["en", "fr", "de", "ko", "zh-CN", "ja", "es", "it", "pt", "nl", "sv", "ru"];
     for _ in 0..2_000 {
         let count = 1 + rng.below(12) as usize;
         let list: Vec<&str> = (0..count).map(|_| *rng.pick(tags)).collect();
@@ -1997,7 +1912,7 @@ fn generate_accept_language_header_has_descending_q_values() {
         assert_eq!(items.len(), count);
         assert_eq!(items[0], list[0]);
         for (i, item) in items.iter().enumerate().skip(1) {
-            let q = (10 - i).max(1);
+            let q = 10usize.saturating_sub(i).max(1);
             assert_eq!(*item, format!("{};q=0.{q}", list[i]));
         }
     }
