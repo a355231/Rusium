@@ -1,0 +1,16 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Standalone Rust port of net/third_party/uri_template. Not wired into GN yet.
+[package]
+name = "uri_template"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Keep cargo from searching parent directories for a workspace.
+[workspace]
+
+[dependencies]
+escape = { path = "../../../../../base/strings/rust/escape" }

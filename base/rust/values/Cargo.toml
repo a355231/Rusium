@@ -1,0 +1,20 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Standalone Rust port of base/values.{h,cc} and base/value_iterators.{h,cc}.
+# Not wired into GN yet.
+[package]
+name = "values"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Keep cargo from searching parent directories for a workspace.
+[workspace]
+
+[dependencies]
+# Used by DebugString() to format numbers the same way as base::NumberToString.
+string_number_conversions = { path = "../../strings/rust/string_number_conversions" }
+# Used by Value(std::u16string_view) to convert UTF-16 input to UTF-8.
+utf_string_conversions = { path = "../../strings/rust/utf_string_conversions" }
