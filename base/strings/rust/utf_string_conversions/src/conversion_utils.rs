@@ -206,8 +206,7 @@ mod tests {
         index += 1;
         assert_eq!(read_unicode_character_utf16(&text, &mut index), Some('\u{10300}'));
         assert_eq!(index, 2); // Moved to the trail unit.
-        index += 1;
-        // Lead followed by a non-trail: fails, index unchanged.
+                              // Lead followed by a non-trail: fails, index unchanged.
         let mut bad = 3;
         assert_eq!(read_unicode_character_utf16(&text, &mut bad), None);
         assert_eq!(bad, 3);

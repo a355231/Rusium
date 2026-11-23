@@ -54,22 +54,14 @@ pub(crate) fn transcode<S, D: Default>(
         }
         i += 1;
     }
-    Converted {
-        text: output,
-        success,
-    }
+    Converted { text: output, success }
 }
 
 // UTF-8 <-> UTF-16 ------------------------------------------------------------
 
 /// Converts UTF-8 to UTF-16. See the module docs for the error rules.
 pub fn utf8_to_utf16(src: &[u8]) -> Converted<Vec<u16>> {
-    transcode(
-        src,
-        read_unicode_character_utf8,
-        write_unicode_character_utf16,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf8, write_unicode_character_utf16, |_, _, _| {})
 }
 
 /// Like [`utf8_to_utf16`], but returns only the text.
@@ -80,12 +72,7 @@ pub fn utf8_to_utf16_lossy(src: &[u8]) -> Vec<u16> {
 /// Converts UTF-16 to UTF-8. A lone surrogate becomes U+FFFD. Surrogate pairs
 /// are combined.
 pub fn utf16_to_utf8(src: &[u16]) -> Converted<String> {
-    transcode(
-        src,
-        read_unicode_character_utf16,
-        write_unicode_character_utf8,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf16, write_unicode_character_utf8, |_, _, _| {})
 }
 
 /// Like [`utf16_to_utf8`], but returns only the text.
@@ -99,12 +86,7 @@ pub fn utf16_to_utf8_lossy(src: &[u16]) -> String {
 
 /// Converts wide (UTF-32) text to UTF-8.
 pub fn wide_to_utf8(src: &[u32]) -> Converted<String> {
-    transcode(
-        src,
-        read_unicode_character_utf32,
-        write_unicode_character_utf8,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf32, write_unicode_character_utf8, |_, _, _| {})
 }
 
 /// Like [`wide_to_utf8`], but returns only the text.
@@ -114,12 +96,7 @@ pub fn wide_to_utf8_lossy(src: &[u32]) -> String {
 
 /// Converts UTF-8 to wide (UTF-32) text.
 pub fn utf8_to_wide(src: &[u8]) -> Converted<Vec<u32>> {
-    transcode(
-        src,
-        read_unicode_character_utf8,
-        write_unicode_character_utf32,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf8, write_unicode_character_utf32, |_, _, _| {})
 }
 
 /// Like [`utf8_to_wide`], but returns only the text.
@@ -129,12 +106,7 @@ pub fn utf8_to_wide_lossy(src: &[u8]) -> Vec<u32> {
 
 /// Converts wide (UTF-32) text to UTF-16.
 pub fn wide_to_utf16(src: &[u32]) -> Converted<Vec<u16>> {
-    transcode(
-        src,
-        read_unicode_character_utf32,
-        write_unicode_character_utf16,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf32, write_unicode_character_utf16, |_, _, _| {})
 }
 
 /// Like [`wide_to_utf16`], but returns only the text.
@@ -144,12 +116,7 @@ pub fn wide_to_utf16_lossy(src: &[u32]) -> Vec<u16> {
 
 /// Converts UTF-16 to wide (UTF-32) text.
 pub fn utf16_to_wide(src: &[u16]) -> Converted<Vec<u32>> {
-    transcode(
-        src,
-        read_unicode_character_utf16,
-        write_unicode_character_utf32,
-        |_, _, _| {},
-    )
+    transcode(src, read_unicode_character_utf16, write_unicode_character_utf32, |_, _, _| {})
 }
 
 /// Like [`utf16_to_wide`], but returns only the text.
@@ -181,10 +148,7 @@ mod tests {
     /// Reference for UTF-8 -> UTF-16: std's lossy decoder uses the same maximal
     /// subpart replacement as ICU, and `success` is true exactly for valid UTF-8.
     fn reference_utf8_to_utf16(src: &[u8]) -> (Vec<u16>, bool) {
-        (
-            String::from_utf8_lossy(src).encode_utf16().collect(),
-            std::str::from_utf8(src).is_ok(),
-        )
+        (String::from_utf8_lossy(src).encode_utf16().collect(), std::str::from_utf8(src).is_ok())
     }
 
     fn reference_utf16_to_utf8(src: &[u16]) -> (String, bool) {
@@ -259,11 +223,7 @@ mod tests {
         }
         let cases = [
             // Regular UTF-8 input.
-            Case {
-                utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd",
-                wide: &[0x4f60, 0x597d],
-                success: true,
-            },
+            Case { utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd", wide: &[0x4f60, 0x597d], success: true },
             // Non-character is passed through.
             Case {
                 utf8: b"\xef\xbf\xbfHello",
@@ -271,17 +231,9 @@ mod tests {
                 success: true,
             },
             // Truncated UTF-8 sequence.
-            Case {
-                utf8: b"\xe4\xa0\xe5\xa5\xbd",
-                wide: &[0xfffd, 0x597d],
-                success: false,
-            },
+            Case { utf8: b"\xe4\xa0\xe5\xa5\xbd", wide: &[0xfffd, 0x597d], success: false },
             // Truncated off the end.
-            Case {
-                utf8: b"\xe5\xa5\xbd\xe4\xa0",
-                wide: &[0x597d, 0xfffd],
-                success: false,
-            },
+            Case { utf8: b"\xe5\xa5\xbd\xe4\xa0", wide: &[0x597d, 0xfffd], success: false },
             // Non-shortest-form UTF-8.
             Case {
                 utf8: b"\xf0\x84\xbd\xa0\xe5\xa5\xbd",
@@ -289,22 +241,10 @@ mod tests {
                 success: false,
             },
             // This UTF-8 character decodes to a UTF-16 surrogate, which is illegal.
-            Case {
-                utf8: b"\xed\xb0\x80",
-                wide: &[0xfffd, 0xfffd, 0xfffd],
-                success: false,
-            },
+            Case { utf8: b"\xed\xb0\x80", wide: &[0xfffd, 0xfffd, 0xfffd], success: false },
             // Non-BMP characters, as UTF-32 (32-bit wchar_t).
-            Case {
-                utf8: b"A\xF0\x90\x8C\x80z",
-                wide: &[0x41, 0x10300, 0x7a],
-                success: true,
-            },
-            Case {
-                utf8: b"A\xF4\x8F\xBF\xBEz",
-                wide: &[0x41, 0x10fffe, 0x7a],
-                success: true,
-            },
+            Case { utf8: b"A\xF0\x90\x8C\x80z", wide: &[0x41, 0x10300, 0x7a], success: true },
+            Case { utf8: b"A\xF4\x8F\xBF\xBEz", wide: &[0x41, 0x10fffe, 0x7a], success: true },
         ];
         for case in &cases {
             let converted = utf8_to_wide(case.utf8);
@@ -345,17 +285,9 @@ mod tests {
         }
         let cases = [
             // Regular UTF-16 input.
-            Case {
-                utf16: &[0x4f60, 0x597d],
-                utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd",
-                success: true,
-            },
+            Case { utf16: &[0x4f60, 0x597d], utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd", success: true },
             // Test a non-BMP character.
-            Case {
-                utf16: &[0xd800, 0xdf00],
-                utf8: b"\xF0\x90\x8C\x80",
-                success: true,
-            },
+            Case { utf16: &[0xd800, 0xdf00], utf8: b"\xF0\x90\x8C\x80", success: true },
             // Non-characters are passed through.
             Case {
                 utf16: &[0xffff, 'H' as u16, 'e' as u16, 'l' as u16, 'l' as u16, 'o' as u16],
@@ -363,22 +295,16 @@ mod tests {
                 success: true,
             },
             Case {
-                utf16: &[0xdbff, 0xdffe, 'H' as u16, 'e' as u16, 'l' as u16, 'l' as u16, 'o' as u16],
+                utf16: &[
+                    0xdbff, 0xdffe, 'H' as u16, 'e' as u16, 'l' as u16, 'l' as u16, 'o' as u16,
+                ],
                 utf8: b"\xF4\x8F\xBF\xBEHello",
                 success: true,
             },
             // The first character is a truncated UTF-16 character.
-            Case {
-                utf16: &[0xd800, 0x597d],
-                utf8: b"\xef\xbf\xbd\xe5\xa5\xbd",
-                success: false,
-            },
+            Case { utf16: &[0xd800, 0x597d], utf8: b"\xef\xbf\xbd\xe5\xa5\xbd", success: false },
             // Truncated at the end.
-            Case {
-                utf16: &[0x597d, 0xd800],
-                utf8: b"\xe5\xa5\xbd\xef\xbf\xbd",
-                success: false,
-            },
+            Case { utf16: &[0x597d, 0xd800], utf8: b"\xe5\xa5\xbd\xef\xbf\xbd", success: false },
         ];
         for case in &cases {
             let converted = utf16_to_utf8(case.utf16);
@@ -397,17 +323,9 @@ mod tests {
         }
         let cases = [
             // Regular 16-bit input.
-            Case {
-                utf32: &[0x4f60, 0x597d],
-                utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd",
-                success: true,
-            },
+            Case { utf32: &[0x4f60, 0x597d], utf8: b"\xe4\xbd\xa0\xe5\xa5\xbd", success: true },
             // Test a non-BMP character.
-            Case {
-                utf32: &[0x41, 0x10300, 0x7a],
-                utf8: b"A\xF0\x90\x8C\x80z",
-                success: true,
-            },
+            Case { utf32: &[0x41, 0x10300, 0x7a], utf8: b"A\xF0\x90\x8C\x80z", success: true },
             // Non-characters are passed through.
             Case {
                 utf32: &[0xffff, 'H' as u32, 'e' as u32, 'l' as u32, 'l' as u32, 'o' as u32],
@@ -426,11 +344,7 @@ mod tests {
                 success: false,
             },
             // The first character is a truncated UTF-16 character.
-            Case {
-                utf32: &[0xd800, 0x597d],
-                utf8: b"\xef\xbf\xbd\xe5\xa5\xbd",
-                success: false,
-            },
+            Case { utf32: &[0xd800, 0x597d], utf8: b"\xef\xbf\xbd\xe5\xa5\xbd", success: false },
             Case {
                 utf32: &[0xdc01, 'H' as u32, 'e' as u32, 'l' as u32, 'l' as u32, 'o' as u32],
                 utf8: b"\xef\xbf\xbdHello",
@@ -509,9 +423,8 @@ mod tests {
     }
 
     fn random_bytes(rng: &mut XorShift64) -> Vec<u8> {
-        const INTERESTING: [u8; 12] = [
-            0x00, 0x41, 0x7f, 0x80, 0xa0, 0xbf, 0xc0, 0xc2, 0xdf, 0xe0, 0xed, 0xf0,
-        ];
+        const INTERESTING: [u8; 12] =
+            [0x00, 0x41, 0x7f, 0x80, 0xa0, 0xbf, 0xc0, 0xc2, 0xdf, 0xe0, 0xed, 0xf0];
         let len = rng.below(48);
         (0..len)
             .map(|_| {
@@ -551,7 +464,7 @@ mod tests {
     #[test]
     fn utf8_to_utf16_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0001);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_bytes(&mut rng);
             let converted = utf8_to_utf16(&input);
             let (expected, success) = reference_utf8_to_utf16(&input);
@@ -563,7 +476,7 @@ mod tests {
     #[test]
     fn utf16_to_utf8_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0002);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_utf16(&mut rng);
             let converted = utf16_to_utf8(&input);
             let (expected, success) = reference_utf16_to_utf8(&input);
@@ -575,13 +488,11 @@ mod tests {
     #[test]
     fn utf8_to_wide_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0003);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_bytes(&mut rng);
             let converted = utf8_to_wide(&input);
-            let expected_wide: Vec<u32> = String::from_utf8_lossy(&input)
-                .chars()
-                .map(u32::from)
-                .collect();
+            let expected_wide: Vec<u32> =
+                String::from_utf8_lossy(&input).chars().map(u32::from).collect();
             assert_eq!(converted.text, expected_wide, "{input:02x?}");
             assert_eq!(converted.success, std::str::from_utf8(&input).is_ok());
         }
@@ -591,7 +502,7 @@ mod tests {
     #[test]
     fn wide_to_utf8_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0004);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_wide(&mut rng);
             let converted = wide_to_utf8(&input);
             let (expected, success) = reference_wide_to_utf8(&input);
@@ -603,7 +514,7 @@ mod tests {
     #[test]
     fn wide_to_utf16_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0005);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_wide(&mut rng);
             let converted = wide_to_utf16(&input);
             let (text, success) = reference_wide_to_utf8(&input);
@@ -616,7 +527,7 @@ mod tests {
     #[test]
     fn utf16_to_wide_matches_reference() {
         let mut rng = XorShift64::new(0x5eed_0006);
-        for _ in 0..5000 {
+        for _ in 0..20000 {
             let input = random_utf16(&mut rng);
             let converted = utf16_to_wide(&input);
             let (text, success) = reference_utf16_to_utf8(&input);
@@ -657,6 +568,33 @@ mod tests {
         assert_eq!(converted.text, [0xfffd, 0x597d]);
     }
 
+    // Exhaustive over all sequences of up to 4 bytes drawn from representative
+    // lead, continuation, and boundary bytes (22^4 cases). Compared with std.
+    #[test]
+    fn utf8_representative_sequences_match_std_exhaustively() {
+        const BYTES: [u8; 22] = [
+            0x00, 0x41, 0x7f, 0x80, 0x8f, 0x90, 0x9f, 0xa0, 0xbf, 0xc0, 0xc1, 0xc2, 0xdf, 0xe0,
+            0xe1, 0xed, 0xef, 0xf0, 0xf1, 0xf4, 0xf5, 0xff,
+        ];
+        let mut sequence = Vec::with_capacity(4);
+        for len in 0..=4u32 {
+            for mut code in 0..BYTES.len().pow(len) {
+                sequence.clear();
+                for _ in 0..len {
+                    sequence.push(BYTES[code % BYTES.len()]);
+                    code /= BYTES.len();
+                }
+                let converted = utf8_to_utf16(&sequence);
+                let (expected, success) = reference_utf8_to_utf16(&sequence);
+                assert_eq!(
+                    (converted.text, converted.success),
+                    (expected, success),
+                    "{sequence:02x?}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn success_matches_std_validity_for_random_utf8() {
         let mut rng = XorShift64::new(0x5eed_0007);
@@ -677,15 +615,9 @@ mod tests {
         // Overlong encodings of '/' and U+0000 (C0 AF, E0 80 80, F0 80 80 80).
         assert_eq!(utf8_to_utf16_lossy(b"\xc0\xaf"), [0xfffd, 0xfffd]);
         assert_eq!(utf8_to_utf16_lossy(b"\xe0\x80\x80"), [0xfffd, 0xfffd, 0xfffd]);
-        assert_eq!(
-            utf8_to_utf16_lossy(b"\xf0\x80\x80\x80"),
-            [0xfffd, 0xfffd, 0xfffd, 0xfffd]
-        );
+        assert_eq!(utf8_to_utf16_lossy(b"\xf0\x80\x80\x80"), [0xfffd, 0xfffd, 0xfffd, 0xfffd]);
         // Above U+10FFFF: F4 90 80 80 is rejected at the second byte.
-        assert_eq!(
-            utf8_to_utf16_lossy(b"\xf4\x90\x80\x80"),
-            [0xfffd, 0xfffd, 0xfffd, 0xfffd]
-        );
+        assert_eq!(utf8_to_utf16_lossy(b"\xf4\x90\x80\x80"), [0xfffd, 0xfffd, 0xfffd, 0xfffd]);
         // A truncated 4-byte sequence at the end is one U+FFFD.
         let converted = utf8_to_utf16(b"\xf0\x90\x80");
         assert!(!converted.success);

@@ -12,11 +12,11 @@
 //! Unsigned arithmetic wraps, as in the C++ code, using `wrapping_*`.
 //! The C++ DCHECKs in `merge_sequential_adjustments` are `debug_assert!`s here.
 
-use crate::conversions::{transcode, Converted};
 use crate::conversion_utils::{
     read_unicode_character_utf16, read_unicode_character_utf8, write_unicode_character_utf16,
     write_unicode_character_utf8,
 };
+use crate::conversions::{transcode, Converted};
 
 /// Equivalent of `std::u16string::npos`. Offsets equal to this are never
 /// produced; they are represented as `None`.
@@ -33,11 +33,7 @@ pub struct Adjustment {
 
 impl Adjustment {
     pub fn new(original_offset: usize, original_length: usize, output_length: usize) -> Self {
-        Self {
-            original_offset,
-            original_length,
-            output_length,
-        }
+        Self { original_offset, original_length, output_length }
     }
 }
 
@@ -75,10 +71,7 @@ pub fn adjust_offsets(
     offsets: &[Option<usize>],
     limit: Option<usize>,
 ) -> Vec<Option<usize>> {
-    offsets
-        .iter()
-        .map(|&offset| adjust_offset(adjustments, offset, limit))
-        .collect()
+    offsets.iter().map(|&offset| adjust_offset(adjustments, offset, limit)).collect()
 }
 
 /// Maps an offset in the adjusted string back to the original string. Returns
@@ -88,17 +81,13 @@ pub fn unadjust_offset(adjustments: &[Adjustment], offset: Option<usize>) -> Opt
     let mut original_lengths = 0usize;
     let mut output_lengths = 0usize;
     for adj in adjustments {
-        let position = offset
-            .wrapping_add(original_lengths)
-            .wrapping_sub(output_lengths);
+        let position = offset.wrapping_add(original_lengths).wrapping_sub(output_lengths);
         if position <= adj.original_offset {
             break;
         }
         original_lengths = original_lengths.wrapping_add(adj.original_length);
         output_lengths = output_lengths.wrapping_add(adj.output_length);
-        let position = offset
-            .wrapping_add(original_lengths)
-            .wrapping_sub(output_lengths);
+        let position = offset.wrapping_add(original_lengths).wrapping_sub(output_lengths);
         if position < adj.original_offset.wrapping_add(adj.original_length) {
             return None;
         }
@@ -112,10 +101,7 @@ pub fn unadjust_offsets(
     adjustments: &[Adjustment],
     offsets: &[Option<usize>],
 ) -> Vec<Option<usize>> {
-    offsets
-        .iter()
-        .map(|&offset| unadjust_offset(adjustments, offset))
-        .collect()
+    offsets.iter().map(|&offset| unadjust_offset(adjustments, offset)).collect()
 }
 
 /// Combines two sequential sets of adjustments. `first_adjustments` changed the
@@ -149,9 +135,7 @@ pub fn merge_sequential_adjustments(
             Some(f) if adj_end > f.original_offset => {
                 if adj_start > f.original_offset {
                     // `first` comes before this entry: emit it and advance.
-                    debug_assert!(
-                        f.original_offset.wrapping_add(f.output_length) <= adj_start
-                    );
+                    debug_assert!(f.original_offset.wrapping_add(f.output_length) <= adj_start);
                     shift = shift.wrapping_add(f.original_length.wrapping_sub(f.output_length));
                     builder.push(f);
                     first_index += 1;
@@ -203,11 +187,7 @@ fn convert_with_adjustments<S, D: Default>(
 /// for a multi-byte ill-formed sequence has a different length than the bytes
 /// it covers, so it produces an adjustment.
 pub fn utf8_to_utf16_with_adjustments(src: &[u8]) -> (Converted<Vec<u16>>, Vec<Adjustment>) {
-    convert_with_adjustments(
-        src,
-        read_unicode_character_utf8,
-        write_unicode_character_utf16,
-    )
+    convert_with_adjustments(src, read_unicode_character_utf8, write_unicode_character_utf16)
 }
 
 /// Converts UTF-8 to UTF-16 and maps each offset (into UTF-8 bytes) to the
@@ -216,10 +196,8 @@ pub fn utf8_to_utf16_and_adjust_offsets(
     src: &[u8],
     offsets: &[Option<usize>],
 ) -> (Vec<u16>, Vec<Option<usize>>) {
-    let checked: Vec<Option<usize>> = offsets
-        .iter()
-        .map(|offset| offset.filter(|&o| o <= src.len()))
-        .collect();
+    let checked: Vec<Option<usize>> =
+        offsets.iter().map(|offset| offset.filter(|&o| o <= src.len())).collect();
     let (converted, adjustments) = utf8_to_utf16_with_adjustments(src);
     let adjusted = adjust_offsets(&adjustments, &checked, None);
     (converted.text, adjusted)
@@ -232,10 +210,8 @@ pub fn utf16_to_utf8_and_adjust_offsets(
     src: &[u16],
     offsets: &[Option<usize>],
 ) -> (String, Vec<Option<usize>>) {
-    let checked: Vec<Option<usize>> = offsets
-        .iter()
-        .map(|offset| offset.filter(|&o| o <= src.len()))
-        .collect();
+    let checked: Vec<Option<usize>> =
+        offsets.iter().map(|offset| offset.filter(|&o| o <= src.len())).collect();
     let (converted, adjustments) =
         convert_with_adjustments(src, read_unicode_character_utf16, write_unicode_character_utf8);
     let adjusted = adjust_offsets(&adjustments, &checked, None);
@@ -254,7 +230,7 @@ mod tests {
 
     // Port of UTFOffsetStringConversionsTest.AdjustOffset.
     #[test]
-    fn adjust_offset() {
+    fn adjust_offset_cases() {
         // (utf8, input_offset, output_offset)
         let utf8_to_utf16_cases: &[(&[u8], Option<usize>, Option<usize>)] = &[
             (b"", Some(0), Some(0)),
@@ -304,16 +280,13 @@ mod tests {
     fn limit_offsets() {
         let limit = 10;
         let items = 20;
-        let forward: Vec<Option<usize>> = (0..items)
-            .map(|t| adjust_offset(&[], Some(t), Some(limit)))
-            .collect();
+        let forward: Vec<Option<usize>> =
+            (0..items).map(|t| adjust_offset(&[], Some(t), Some(limit))).collect();
         assert_eq!(forward.iter().flatten().count(), 11);
 
         // Reverse order and try again.
-        let backward: Vec<Option<usize>> = (0..items)
-            .rev()
-            .map(|t| adjust_offset(&[], Some(t), Some(limit)))
-            .collect();
+        let backward: Vec<Option<usize>> =
+            (0..items).rev().map(|t| adjust_offset(&[], Some(t), Some(limit))).collect();
         assert_eq!(backward.iter().flatten().count(), 11);
     }
 
@@ -323,18 +296,8 @@ mod tests {
         // 1: abcXXXdef ==> abcXdef
         let offsets: Vec<usize> = (0..=9).collect();
         let adjustments = [Adjustment::new(3, 3, 1)];
-        let expected = [
-            Some(0),
-            Some(1),
-            Some(2),
-            Some(3),
-            None,
-            None,
-            Some(4),
-            Some(5),
-            Some(6),
-            Some(7),
-        ];
+        let expected =
+            [Some(0), Some(1), Some(2), Some(3), None, None, Some(4), Some(5), Some(6), Some(7)];
         assert_eq!(adjust_offsets(&adjustments, &some(&offsets), None), expected);
 
         // 2: XXXaXXXXbcXXXXXXXdefXXX ==> XaXXbcXXXXdefX
@@ -577,8 +540,10 @@ mod tests {
         // Checks that every mapped offset is at most the output length. Ill-formed
         // input is also covered by the conversion tests.
         let input = b"\xf0\x9f\x98\x80\xff\xe4\xa0\xe5\xa5\xbd";
-        let (units, adjusted) =
-            utf8_to_utf16_and_adjust_offsets(input, &(0..=input.len()).map(Some).collect::<Vec<_>>());
+        let (units, adjusted) = utf8_to_utf16_and_adjust_offsets(
+            input,
+            &(0..=input.len()).map(Some).collect::<Vec<_>>(),
+        );
         assert_eq!(units, utf8_to_utf16(input).text);
         for mapped in adjusted.into_iter().flatten() {
             assert!(mapped <= units.len());
