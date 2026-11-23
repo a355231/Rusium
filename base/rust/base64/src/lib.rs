@@ -43,10 +43,11 @@
 //!   results are the same for all inputs.
 //! - Unit tests are ported with the same inputs and expected outputs. The
 //!   gtest death tests (`EXPECT_CHECK_DEATH`) become `#[should_panic]` tests
-//!   where the same check is reachable. Randomized tests (the fuzz tests in
-//!   base64url_unittest.cc) are replaced by seeded xorshift tests in the same
-//!   crate. Those tests also check against a separate reference
-//!   implementation.
+//!   where the same check is reachable. The fuzz tests in
+//!   base64url_unittest.cc are replaced by seeded xorshift tests. Standard
+//!   encode and decode are also checked against separate reference
+//!   implementations. The base64url fuzz tests check round trips and policy
+//!   invariants, not a separate reference.
 
 #![forbid(unsafe_code)]
 

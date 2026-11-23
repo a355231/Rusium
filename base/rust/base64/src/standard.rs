@@ -8,8 +8,7 @@
 
 use std::borrow::Cow;
 
-const ALPHABET: &[u8; 64] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const PAD: u8 = b'=';
 
 /// Largest input length accepted by [`encoded_len`]. Same value as the C++
@@ -48,10 +47,7 @@ pub fn encode(input: &[u8]) -> String {
 /// Panics if the resulting length would overflow `usize`, like the C++ code.
 pub fn encode_append(input: &[u8], output: &mut String) {
     let added = encoded_len(input.len());
-    let _total = output
-        .len()
-        .checked_add(added)
-        .expect("base64 output length overflows usize");
+    let _total = output.len().checked_add(added).expect("base64 output length overflows usize");
     output.reserve(added);
     for chunk in input.chunks(3) {
         let b0 = chunk[0];
@@ -87,11 +83,7 @@ pub fn decode(input: &[u8], policy: DecodePolicy) -> Option<Vec<u8>> {
         }
         DecodePolicy::Forgiving => Cow::Borrowed(input),
     };
-    let body_len = if data.is_empty() {
-        0
-    } else {
-        padded_body_len(&data, policy)?
-    };
+    let body_len = if data.is_empty() { 0 } else { padded_body_len(&data, policy)? };
     decode_body(&data[..body_len])
 }
 
@@ -110,12 +102,10 @@ fn padded_body_len(data: &[u8], policy: DecodePolicy) -> Option<usize> {
     if policy == DecodePolicy::Strict && (remainder != 0 || len < 4) {
         return None;
     }
-    if remainder == 0 {
+    if remainder == 0 && len >= 1 && data[len - 1] == PAD {
+        len -= 1;
         if len >= 1 && data[len - 1] == PAD {
             len -= 1;
-            if len >= 1 && data[len - 1] == PAD {
-                len -= 1;
-            }
         }
     }
     if len % 4 == 1 {
@@ -197,7 +187,7 @@ mod tests {
         if bits > 0 {
             out.push(char::from(ALPHABET[((acc << (6 - bits)) & 63) as usize]));
         }
-        while out.len() % 4 != 0 {
+        while !out.len().is_multiple_of(4) {
             out.push('=');
         }
         out
@@ -218,7 +208,7 @@ mod tests {
             input.to_vec()
         };
         let mut end = s.len();
-        if s.len() % 4 == 0 {
+        if s.len().is_multiple_of(4) {
             let mut stripped = 0;
             while stripped < 2 && end > 0 && s[end - 1] == b'=' {
                 end -= 1;
@@ -269,7 +259,8 @@ mod tests {
     #[test]
     fn forgiving_and_strict_decode() {
         // nullptr in C++ (decode failure) is None here.
-        let cases: &[(&str, Option<&[u8]>, Option<&[u8]>)] = &[
+        type Case = (&'static str, Option<&'static [u8]>, Option<&'static [u8]>);
+        let cases: &[Case] = &[
             // Failures in all modes.
             ("abc&", None, None),
             ("ab-d", None, None),
@@ -297,11 +288,7 @@ mod tests {
             ("ab\t\tc=", Some(b"i\xB7"), None),
             ("ab c\ndefgh", Some(b"i\xB7\x1Dy\xF8!"), None),
             ("a\tb\nc\x0C d\r", Some(b"i\xB7\x1D"), None),
-            (
-                "this should fail",
-                Some(b"\xB6\x18\xAC\xB2\x1A.\x95\xD7\xDA\x8A"),
-                None,
-            ),
+            ("this should fail", Some(b"\xB6\x18\xAC\xB2\x1A.\x95\xD7\xDA\x8A"), None),
             // VT is not whitespace.
             ("ab\x0Bcd", None, None),
             // Empty input gives empty output.
@@ -429,10 +416,7 @@ mod tests {
             let data = rng.bytes(len);
             let enc = encode(&data);
             assert_eq!(decode_strict(enc.as_bytes()).as_deref(), Some(&data[..]));
-            assert_eq!(
-                decode(enc.as_bytes(), DecodePolicy::Forgiving).as_deref(),
-                Some(&data[..])
-            );
+            assert_eq!(decode(enc.as_bytes(), DecodePolicy::Forgiving).as_deref(), Some(&data[..]));
         }
     }
 
@@ -451,10 +435,7 @@ mod tests {
                 }
                 spaced.push(c);
             }
-            assert_eq!(
-                decode(&spaced, DecodePolicy::Forgiving).as_deref(),
-                Some(&data[..])
-            );
+            assert_eq!(decode(&spaced, DecodePolicy::Forgiving).as_deref(), Some(&data[..]));
             if !spaced.iter().all(|&b| enc.contains(&b)) {
                 // Strict mode never accepts whitespace.
                 assert_eq!(decode(&spaced, DecodePolicy::Strict), None);
@@ -468,9 +449,7 @@ mod tests {
         let mut rng = XorShift64(0xA5A5_5A5A_1357_9BDF);
         for _ in 0..20000 {
             let len = rng.below(25);
-            let input: Vec<u8> = (0..len)
-                .map(|_| alphabet[rng.below(alphabet.len())])
-                .collect();
+            let input: Vec<u8> = (0..len).map(|_| alphabet[rng.below(alphabet.len())]).collect();
             assert_eq!(
                 decode(&input, DecodePolicy::Strict),
                 ref_decode(&input, false),
