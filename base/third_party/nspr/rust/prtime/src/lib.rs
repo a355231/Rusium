@@ -26,8 +26,9 @@
 //!   This is exact for fixed offsets. It may differ from `mktime` near DST
 //!   transitions, because `mktime` applies its own gap and overlap rules.
 //!   The Windows `localtime_s` path and the Visual C++ 2005 `mktime` guard
-//!   are not ported. The `mktime` failure fallback is only reached for years
-//!   before 1970, as in the C++ code.
+//!   are not ported. The C++ fallback for a failed `mktime` is not ported
+//!   either. The supplied offset function never fails, so the fallback path
+//!   runs only for years before 1970, as in the C++ code.
 //! - `PR_ExplodeTime` and `PR_LocalTimeParameters` are not ported, because
 //!   they are not in this checkout's prtime.{h,cc}. Only the GMT parameter
 //!   function is available, as [`gmt_parameters`].
@@ -234,9 +235,7 @@ fn apply_sec_offset(t: &mut ExplodedTime, sec_offset: i32) {
 pub fn normalize_time(time: &mut ExplodedTime, params: impl Fn(&ExplodedTime) -> TimeParameters) {
     // Get back to GMT.
     let old = time.params;
-    time.sec = time
-        .sec
-        .wrapping_sub(old.gmt_offset.wrapping_add(old.dst_offset));
+    time.sec = time.sec.wrapping_sub(old.gmt_offset.wrapping_add(old.dst_offset));
     time.params = TimeParameters::default();
 
     // Now normalize GMT. Leap seconds are not counted, as in the C++ code.
@@ -252,11 +251,11 @@ pub fn normalize_time(time: &mut ExplodedTime, params: impl Fn(&ExplodedTime) ->
     normalize_mday(time);
 
     // Recompute yday and wday.
-    time.yday = time
-        .mday
-        .wrapping_add(LAST_DAY_OF_MONTH[leap_index(time.year)][time.month as usize])
-        as i16;
-    let num_days = days_between_years(1970, i32::from(time.year)).wrapping_add(i32::from(time.yday));
+    time.yday =
+        time.mday.wrapping_add(LAST_DAY_OF_MONTH[leap_index(time.year)][time.month as usize])
+            as i16;
+    let num_days =
+        days_between_years(1970, i32::from(time.year)).wrapping_add(i32::from(time.yday));
     let mut wday = num_days.wrapping_add(4) % 7;
     if wday < 0 {
         wday += 7;
@@ -265,10 +264,7 @@ pub fn normalize_time(time: &mut ExplodedTime, params: impl Fn(&ExplodedTime) ->
 
     // Recompute time parameters, then move to local time.
     time.params = params(time);
-    let offset = time
-        .params
-        .gmt_offset
-        .wrapping_add(time.params.dst_offset);
+    let offset = time.params.gmt_offset.wrapping_add(time.params.dst_offset);
     apply_sec_offset(time, offset);
 }
 
@@ -403,10 +399,8 @@ impl Input<'_> {
     /// Characters that end a token, as in the C skip loop.
     fn is_token_delimiter(&self, i: usize) -> bool {
         let c = self.at(i);
-        matches!(
-            c,
-            b' ' | b'\t' | b',' | b';' | b'-' | b'+' | b'/' | b'(' | b')' | b'[' | b']'
-        ) || (c == b'T' && self.digit(i + 1))
+        matches!(c, b' ' | b'\t' | b',' | b';' | b'-' | b'+' | b'/' | b'(' | b')' | b'[' | b']')
+            || (c == b'T' && self.digit(i + 1))
     }
 
     /// Characters skipped between tokens.
@@ -539,11 +533,7 @@ impl Input<'_> {
                     f.zone = TT_GMT;
                 }
             }
-            b'w' => {
-                if unknown_dotw && self.pair(rest + 1, b'e', b'd') {
-                    f.dotw = TT_WED;
-                }
-            }
+            b'w' if unknown_dotw && self.pair(rest + 1, b'e', b'd') => f.dotw = TT_WED,
             _ => {}
         }
     }
@@ -619,7 +609,7 @@ impl Input<'_> {
             if end - *rest > 2 {
                 return; // It is [0-9][0-9][0-9]+:.
             }
-            let mut tmp_min = self.small_number(*rest, end - *rest);
+            let tmp_min = self.small_number(*rest, end - *rest);
 
             // Now go for seconds.
             *rest = end;
@@ -682,8 +672,6 @@ impl Input<'_> {
             f.min = tmp_min;
             f.sec = tmp_sec;
             f.usec = tmp_usec;
-            tmp_min = 0;
-            let _ = tmp_min;
             *rest = end;
             return;
         }
@@ -981,11 +969,17 @@ pub fn parse_time_string_with_local_offset(
 ) -> Option<PrTime> {
     // Like a C string, stop at the first NUL.
     let len = input.iter().position(|&b| b == 0).unwrap_or(input.len());
-    let input = Input {
-        bytes: &input[..len],
-    };
+    let input = Input { bytes: &input[..len] };
 
     let mut f = scan(&input)?;
+
+    // Set the GMT and DST offsets from a named zone, if no numeric offset.
+    if f.zone != TT_UNKNOWN && f.zone_offset == -1 {
+        if let Some((gmt, dst)) = named_zone_offsets(f.zone) {
+            f.zone_offset = gmt;
+            f.dst_offset = dst;
+        }
+    }
 
     if f.month == TT_UNKNOWN || f.date == -1 || f.year == -1 || f.year > i32::from(i16::MAX) {
         // No year, month, or day of month: the string cannot be parsed.
@@ -1020,18 +1014,10 @@ pub fn parse_time_string_with_local_offset(
     // Compute wday and yday, and normalize for the checks below.
     normalize_time(&mut result, gmt_parameters);
 
-    // Set the GMT and DST offsets in tm_params.
     if f.zone == TT_UNKNOWN && default_to_gmt {
         // No zone was given, so pretend the zone was GMT.
         f.zone = TT_GMT;
         f.zone_offset = 0;
-    }
-
-    if f.zone != TT_UNKNOWN && f.zone_offset == -1 {
-        if let Some((gmt, dst)) = named_zone_offsets(f.zone) {
-            f.zone_offset = gmt;
-            f.dst_offset = dst;
-        }
     }
 
     if f.zone_offset == -1 {
