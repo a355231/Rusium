@@ -604,8 +604,7 @@ fn empty_tokens_match_std_split() {
     let mut rng = XorShift(0xdead_beef_cafe_f00d);
     for _ in 0..3000 {
         let input = rng.string_from(&alphabet, 12);
-        let expected: Vec<String> =
-            input.split(|c: char| c == ',' || c == ';').map(str::to_string).collect();
+        let expected: Vec<String> = input.split([',', ';']).map(str::to_string).collect();
         let got: Vec<String> =
             collect_str(&input, ",;", None, RETURN_EMPTY_TOKENS, WhitespacePolicy::IncludeInTokens)
                 .into_iter()
@@ -621,11 +620,11 @@ fn ret_delims_with_empty_tokens_interleaves_std_split() {
     let mut rng = XorShift(0x0123_4567_89ab_cdef);
     for _ in 0..3000 {
         let input = rng.string_from(&alphabet, 12);
-        let pieces: Vec<&str> = input.split(|c: char| c == ',' || c == ';').collect();
+        let pieces: Vec<&str> = input.split([',', ';']).collect();
         // Rebuild the expected sequence: piece, delim, piece, delim, ... piece.
         // Each delimiter is the char at the boundary.
         let mut expected: Vec<(bool, String)> = Vec::new();
-        let delim_chars: Vec<char> = input.chars().filter(|&c| c == ',' || c == ';').collect();
+        let delim_chars: Vec<char> = input.chars().filter(|&c| matches!(c, ',' | ';')).collect();
         for (i, p) in pieces.iter().enumerate() {
             expected.push((false, p.to_string()));
             if i < delim_chars.len() {
